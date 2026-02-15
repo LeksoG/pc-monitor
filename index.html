@@ -1,0 +1,1912 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PC Monitor - Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #0a0a0a;
+      color: #ffffff;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 240px;
+      height: 100vh;
+      background: #0f0f0f;
+      border-right: 1px solid #1a1a1a;
+      padding: 24px 16px;
+      z-index: 1000;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 40px;
+      color: #fff;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #888;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .nav-item:hover {
+      background: #1a1a1a;
+      color: #fff;
+    }
+
+    .nav-item.active {
+      background: #1a1a1a;
+      color: #fff;
+    }
+
+    .nav-item-icon {
+      margin-right: 12px;
+      font-size: 18px;
+    }
+
+    /* Main Content */
+    .main-content {
+      margin-left: 240px;
+      padding: 24px 32px;
+      height: 100vh;
+      overflow-y: auto;
+      transition: opacity 0.3s ease;
+    }
+
+    .main-content.hidden {
+      opacity: 0;
+      pointer-events: none;
+      position: absolute;
+    }
+
+    /* Top Bar with Motherboard */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .page-title {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #141414;
+      padding: 8px 16px;
+      border-radius: 24px;
+      border: 1px solid #1a1a1a;
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .user-name {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .welcome-mobo {
+      font-size: 13px;
+      color: #667eea;
+      margin-top: 8px;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .welcome-mobo:hover {
+      color: #764ba2;
+    }
+
+    .motherboard-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      z-index: 1;
+      min-width: 220px;
+    }
+
+    .motherboard-visual {
+      width: 160px;
+      height: 120px;
+      background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+      border: 2px solid #667eea;
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 8px;
+    }
+
+    .motherboard-visual:hover {
+      border-color: #764ba2;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+    }
+
+    .motherboard-visual::before {
+      content: '🖥️';
+      position: absolute;
+      font-size: 48px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0.3;
+    }
+
+    .motherboard-label {
+      font-size: 11px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .motherboard-name {
+      font-size: 14px;
+      color: #667eea;
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* Welcome Section */
+    .welcome-section {
+      background: linear-gradient(135deg, #1a1a1a 0%, #141414 100%);
+      border: 1px solid #1f1f1f;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .welcome-section::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .welcome-content {
+      flex: 1;
+      z-index: 1;
+    }
+
+    .welcome-text {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 6px;
+    }
+
+    .welcome-name {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .quick-stats {
+      display: flex;
+      gap: 24px;
+    }
+
+    .quick-stat {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .quick-stat-icon {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .quick-stat-label {
+      font-size: 13px;
+      color: #888;
+    }
+
+    .quick-stat-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    /* Dashboard Grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: #141414;
+      border: 1px solid #1f1f1f;
+      border-radius: 16px;
+      padding: 20px;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .card:hover {
+      border-color: #667eea;
+      transform: translateY(-2px);
+    }
+
+    .card.clickable {
+      cursor: pointer;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .card-subtitle {
+      font-size: 12px;
+      color: #555;
+    }
+
+    .card-action {
+      cursor: pointer;
+      color: #888;
+      transition: color 0.2s;
+      font-size: 18px;
+    }
+
+    .card-action:hover {
+      color: #fff;
+    }
+
+    /* Status Badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .status-badge.optimal {
+      background: rgba(52, 211, 153, 0.1);
+      color: #34d399;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Circular Progress */
+    .circular-progress {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 12px;
+    }
+
+    .circular-progress svg {
+      transform: rotate(-90deg);
+    }
+
+    .circular-progress-bg {
+      fill: none;
+      stroke: #1a1a1a;
+      stroke-width: 8;
+    }
+
+    .circular-progress-bar {
+      fill: none;
+      stroke: #667eea;
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.5s ease;
+    }
+
+    .circular-progress-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .circular-progress-value {
+      font-size: 24px;
+      font-weight: 700;
+      display: block;
+    }
+
+    .circular-progress-label {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Utilization Bar */
+    .utilization-bar {
+      margin-top: 16px;
+    }
+
+    .utilization-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .utilization-progress {
+      height: 4px;
+      background: #1a1a1a;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .utilization-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    /* Network Gauges */
+    .network-gauges {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .network-gauge {
+      text-align: center;
+    }
+
+    .gauge-label {
+      font-size: 12px;
+      color: #888;
+      margin-top: 8px;
+    }
+
+    .gauge-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      margin-top: 4px;
+    }
+
+    /* Action Button */
+    .action-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: #000;
+      color: #fff;
+      border: 1px solid #333;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .action-button:hover {
+      background: #111;
+      border-color: #667eea;
+      transform: translateY(-1px);
+    }
+
+    .action-button.secondary {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+    }
+
+    .action-button.secondary:hover {
+      background: #222;
+      border-color: #667eea;
+    }
+
+    /* Storage Bar Header */
+    .storage-bar-header {
+      background: #141414;
+      border: 1px solid #1f1f1f;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .storage-bar-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .storage-bar-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .storage-bar-stats {
+      font-size: 14px;
+      color: #888;
+    }
+
+    .storage-bar-free {
+      font-size: 14px;
+      color: #34d399;
+      font-weight: 600;
+    }
+
+    .storage-bar-container {
+      height: 12px;
+      background: #1a1a1a;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    .storage-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #f59e0b 0%, #ef4444 100%);
+      transition: width 0.5s ease;
+      border-radius: 6px;
+    }
+
+    /* Smart Cleanup */
+    .cleanup-item {
+      background: #1a1a1a;
+      border: 2px solid #1f1f1f;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      transition: border-color 0.2s;
+    }
+
+    .cleanup-item:hover {
+      border-color: #667eea;
+    }
+
+    .cleanup-item input[type="checkbox"] {
+      margin-top: 4px;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    .cleanup-item-content {
+      flex: 1;
+    }
+
+    .cleanup-item-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .cleanup-item-icon {
+      font-size: 20px;
+    }
+
+    .cleanup-item-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .cleanup-item-size {
+      font-size: 13px;
+      color: #f59e0b;
+      font-weight: 600;
+    }
+
+    .cleanup-item-desc {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .cleanup-total {
+      background: #141414;
+      border: 1px solid #1f1f1f;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .cleanup-total-size {
+      font-size: 32px;
+      font-weight: 700;
+      color: #f59e0b;
+      margin: 8px 0;
+    }
+
+    /* Settings Toggle */
+    .settings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: #1a1a1a;
+      border-radius: 12px;
+      border: 1px solid #1f1f1f;
+    }
+
+    .setting-info h4 {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .setting-info p {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .toggle {
+      width: 44px;
+      height: 24px;
+      background: #1a1a1a;
+      border-radius: 12px;
+      border: 1px solid #333;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle.active {
+      background: #667eea;
+      border-color: #667eea;
+    }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: left 0.2s;
+    }
+
+    .toggle.active::after {
+      left: 22px;
+    }
+
+    /* Updates Section */
+    .update-card {
+      background: #141414;
+      border: 1px solid #1f1f1f;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 20px;
+    }
+
+    .update-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+
+    .update-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .update-version {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .update-badge {
+      padding: 6px 16px;
+      background: rgba(52, 211, 153, 0.1);
+      color: #34d399;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .update-badge.available {
+      background: rgba(59, 130, 246, 0.1);
+      color: #3b82f6;
+    }
+
+    .release-notes {
+      margin-top: 24px;
+    }
+
+    .release-notes h4 {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .release-notes ul {
+      list-style: none;
+    }
+
+    .release-notes li {
+      padding: 12px 0;
+      border-bottom: 1px solid #1f1f1f;
+      font-size: 14px;
+      color: #ccc;
+    }
+
+    .release-notes li:before {
+      content: '✓';
+      color: #34d399;
+      margin-right: 12px;
+      font-weight: bold;
+    }
+
+    /* Breadcrumb */
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 0;
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 16px;
+    }
+
+    .breadcrumb-item {
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .breadcrumb-item:hover {
+      color: #fff;
+    }
+
+    .breadcrumb-separator {
+      color: #555;
+    }
+
+    /* File List */
+    .file-item {
+      background: #1a1a1a;
+      border: 1px solid #1f1f1f;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .file-item:hover {
+      border-color: #667eea;
+      background: #1f1f1f;
+    }
+
+    .file-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex: 1;
+    }
+
+    .file-icon {
+      font-size: 32px;
+    }
+
+    .file-details h4 {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .file-meta {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .file-size {
+      font-size: 14px;
+      font-weight: 600;
+      color: #667eea;
+      margin-right: 16px;
+    }
+
+    .delete-btn {
+      padding: 8px 16px;
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .delete-btn:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+    }
+
+    /* Delete Progress */
+    .delete-progress {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #141414;
+      border: 1px solid #1f1f1f;
+      border-radius: 12px;
+      padding: 20px;
+      min-width: 300px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .delete-progress.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: all;
+    }
+
+    .delete-progress-text {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .delete-progress-bar {
+      height: 4px;
+      background: #1a1a1a;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .delete-progress-fill {
+      height: 100%;
+      background: #ef4444;
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
+
+    .delete-progress-status {
+      font-size: 12px;
+      color: #666;
+    }
+
+    /* Fullscreen View */
+    .fullscreen-view {
+      position: fixed;
+      top: 0;
+      left: 240px;
+      right: 0;
+      bottom: 0;
+      background: #0a0a0a;
+      z-index: 2000;
+      padding: 32px;
+      overflow-y: auto;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+    }
+
+    .fullscreen-view.show {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
+    }
+
+    .fullscreen-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    .fullscreen-title {
+      font-size: 32px;
+      font-weight: 700;
+    }
+
+    .fullscreen-subtitle {
+      font-size: 14px;
+      color: #666;
+      margin-top: 8px;
+    }
+
+    .back-btn {
+      background: #141414;
+      border: 1px solid #1f1f1f;
+      padding: 10px 20px;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .back-btn:hover {
+      background: #1a1a1a;
+      border-color: #667eea;
+    }
+
+    /* Breakdown List */
+    .breakdown-list {
+      display: grid;
+      gap: 16px;
+    }
+
+    .breakdown-item {
+      background: #141414;
+      border: 1px solid #1f1f1f;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .breakdown-item:hover {
+      border-color: #667eea;
+      background: #1a1a1a;
+    }
+
+    .breakdown-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .breakdown-icon {
+      font-size: 32px;
+    }
+
+    .breakdown-name {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .breakdown-type {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .breakdown-size {
+      font-size: 20px;
+      font-weight: 700;
+      color: #667eea;
+    }
+
+    /* CPU Details Grid */
+    .cpu-details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .detail-card {
+      background: #141414;
+      border: 1px solid #1f1f1f;
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .detail-card h4 {
+      font-size: 12px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .detail-card p {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .detail-card ul {
+      list-style: none;
+      margin-top: 12px;
+    }
+
+    .detail-card li {
+      padding: 8px 0;
+      border-bottom: 1px solid #1f1f1f;
+      font-size: 14px;
+      color: #ccc;
+    }
+
+    /* Speed Test */
+    .speed-test-container {
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .speed-results {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-top: 40px;
+    }
+
+    .speed-result-card {
+      background: #141414;
+      border: 1px solid #1f1f1f;
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .speed-result-label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .speed-result-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .modal.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-content {
+      background: #141414;
+      border: 1px solid #1f1f1f;
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 700px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      margin-bottom: 24px;
+    }
+
+    .modal-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .modal-subtitle {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .modal-section {
+      margin-bottom: 24px;
+    }
+
+    .modal-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .optimization-option {
+      background: #1a1a1a;
+      border: 2px solid #1f1f1f;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .optimization-option:hover {
+      border-color: #667eea;
+    }
+
+    .optimization-option.selected {
+      border-color: #667eea;
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    .optimization-option h4 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .optimization-option p {
+      font-size: 13px;
+      color: #666;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .modal-actions button {
+      flex: 1;
+    }
+
+    /* Optimization Progress */
+    .optimization-progress {
+      text-align: center;
+      padding: 32px;
+    }
+
+    .optimization-spinner {
+      width: 64px;
+      height: 64px;
+      border: 4px solid #1a1a1a;
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 24px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .optimization-status {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .optimization-detail {
+      font-size: 13px;
+      color: #666;
+    }
+
+    /* Update Red Dot */
+    .nav-item {
+      position: relative;
+    }
+
+    .update-dot {
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: none;
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+
+    .update-dot.visible {
+      display: block;
+    }
+
+    @keyframes dotPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.3); }
+    }
+
+    /* Network Disconnected State */
+    .status-badge.disconnected {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+    }
+
+    .network-disconnected {
+      text-align: center;
+      padding: 24px 0;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .network-disconnected-icon {
+      font-size: 36px;
+      margin-bottom: 8px;
+      opacity: 0.5;
+    }
+
+    /* App Activity Section */
+    .activity-section {
+      background: #141414;
+      border: 1px solid #1f1f1f;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .activity-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .activity-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .activity-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #34d399;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .activity-live::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: #34d399;
+      border-radius: 50%;
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+
+    .activity-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .activity-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+    }
+
+    .activity-app-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 150px;
+      max-width: 150px;
+    }
+
+    .activity-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .activity-name {
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .activity-bar-container {
+      flex: 1;
+      height: 8px;
+      background: #1a1a1a;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .activity-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      transition: width 0.5s ease;
+    }
+
+    .activity-memory {
+      font-size: 12px;
+      color: #888;
+      min-width: 60px;
+      text-align: right;
+      font-weight: 600;
+    }
+
+    .activity-instances {
+      font-size: 11px;
+      color: #555;
+      min-width: 20px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1400px) {
+      .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Delete Progress Notification -->
+  <div class="delete-progress" id="deleteProgress">
+    <div class="delete-progress-text">Deleting file...</div>
+    <div class="delete-progress-bar">
+      <div class="delete-progress-fill" id="deleteProgressFill" style="width: 0%"></div>
+    </div>
+    <div class="delete-progress-status" id="deleteProgressStatus">Please wait...</div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="logo">IQON</div>
+    
+    <div class="nav-item active" onclick="showPage('home')">
+      <span class="nav-item-icon">🏠</span>
+      Home
+    </div>
+    
+    <div class="nav-item" onclick="showPage('updates')" id="updatesNavItem">
+      <span class="nav-item-icon">🔄</span>
+      Updates
+      <span class="update-dot" id="updateDot"></span>
+    </div>
+    
+    <div class="nav-item" onclick="showPage('notifications')">
+      <span class="nav-item-icon">🔔</span>
+      Notifications
+    </div>
+  </div>
+
+  <!-- Main Content - Home -->
+  <div class="main-content" id="homePage">
+    <div class="top-bar">
+      <div class="page-title">Home</div>
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <div class="user-name" id="userName">Loading...</div>
+      </div>
+    </div>
+
+    <div class="welcome-section">
+      <div class="welcome-content">
+        <div class="welcome-text">Welcome back,</div>
+        <div class="welcome-name" id="welcomeName">User</div>
+        
+        <div class="quick-stats">
+          <div class="quick-stat">
+            <div class="quick-stat-icon" style="background: #34d399;"></div>
+            <span class="quick-stat-label">Temperatures</span>
+            <span class="quick-stat-value">Normal</span>
+          </div>
+          <div class="quick-stat">
+            <div class="quick-stat-icon" style="background: #34d399;"></div>
+            <span class="quick-stat-label">Health</span>
+            <span class="quick-stat-value">All Good</span>
+          </div>
+          <div class="quick-stat">
+            <div class="quick-stat-icon" style="background: #34d399;"></div>
+            <span class="quick-stat-label">Stability</span>
+            <span class="quick-stat-value">No recent crashes</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="motherboard-container">
+        <div class="motherboard-visual" onclick="show3DMotherboard()" title="Click to view in 3D"></div>
+        <div class="motherboard-label">Motherboard</div>
+        <div class="motherboard-name" id="userMotherboard">Loading...</div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <!-- CPU Card - Clickable -->
+      <div class="card clickable" onclick="showCPUDetails()">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Processor</div>
+            <div class="card-subtitle" id="cpuModel">Loading...</div>
+          </div>
+          <div class="card-action">→</div>
+        </div>
+        
+        <div class="status-badge optimal">
+          <span class="status-dot"></span>
+          Optimal
+        </div>
+        
+        <div class="circular-progress">
+          <svg width="100" height="100">
+            <circle class="circular-progress-bg" cx="50" cy="50" r="45"></circle>
+            <circle class="circular-progress-bar" id="cpuCircle" cx="50" cy="50" r="45" 
+                    stroke-dasharray="282.743" stroke-dashoffset="282.743"></circle>
+          </svg>
+          <div class="circular-progress-text">
+            <span class="circular-progress-value" id="cpuValue">0%</span>
+            <span class="circular-progress-label">USAGE</span>
+          </div>
+        </div>
+        
+        <div class="utilization-bar">
+          <div class="utilization-label">
+            <span>Utilization</span>
+            <span id="cpuUtil">0%</span>
+          </div>
+          <div class="utilization-progress">
+            <div class="utilization-fill" id="cpuUtilBar" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RAM Card with Model -->
+      <div class="card clickable" onclick="showRAMDetails()">
+        <div class="card-header">
+          <div>
+            <div class="card-title">RAM</div>
+            <div class="card-subtitle" id="ramModel">Loading...</div>
+          </div>
+          <div class="card-action">→</div>
+        </div>
+        
+        <div class="status-badge optimal">
+          <span class="status-dot"></span>
+          Optimal
+        </div>
+        
+        <div class="circular-progress">
+          <svg width="100" height="100">
+            <circle class="circular-progress-bg" cx="50" cy="50" r="45"></circle>
+            <circle class="circular-progress-bar" id="ramCircle" cx="50" cy="50" r="45" 
+                    stroke-dasharray="282.743" stroke-dashoffset="282.743" style="stroke: #34d399;"></circle>
+          </svg>
+          <div class="circular-progress-text">
+            <span class="circular-progress-value" id="ramValue">0%</span>
+            <span class="circular-progress-label">USAGE</span>
+          </div>
+        </div>
+        
+        <div class="utilization-bar">
+          <div class="utilization-label">
+            <span>Utilization</span>
+            <span id="ramUtil">0%</span>
+          </div>
+          <div class="utilization-progress">
+            <div class="utilization-fill" id="ramUtilBar" style="width: 0%; background: linear-gradient(90deg, #34d399 0%, #10b981 100%);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Storage Card -->
+      <div class="card clickable" onclick="showStorageDetails()">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Storage</div>
+            <div class="card-subtitle" id="storageTotal">Loading...</div>
+          </div>
+          <div class="card-action">→</div>
+        </div>
+        
+        <div class="status-badge optimal">
+          <span class="status-dot"></span>
+          <span id="storageFree">0 GB free</span>
+        </div>
+        
+        <div class="circular-progress">
+          <svg width="100" height="100">
+            <circle class="circular-progress-bg" cx="50" cy="50" r="45"></circle>
+            <circle class="circular-progress-bar" id="storageCircle" cx="50" cy="50" r="45" 
+                    stroke-dasharray="282.743" stroke-dashoffset="282.743" style="stroke: #f59e0b;"></circle>
+          </svg>
+          <div class="circular-progress-text">
+            <span class="circular-progress-value" id="storageValue">0%</span>
+            <span class="circular-progress-label">USED</span>
+          </div>
+        </div>
+        
+        <div class="utilization-bar">
+          <div class="utilization-label">
+            <span>Utilization</span>
+            <span id="storageUtil">0%</span>
+          </div>
+          <div class="utilization-progress">
+            <div class="utilization-fill" id="storageUtilBar" style="width: 0%; background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video Card -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Video Card</div>
+            <div class="card-subtitle" id="gpuModel">Loading...</div>
+          </div>
+        </div>
+        
+        <div class="status-badge optimal">
+          <span class="status-dot"></span>
+          Optimal
+        </div>
+        
+        <div class="circular-progress">
+          <svg width="100" height="100">
+            <circle class="circular-progress-bg" cx="50" cy="50" r="45"></circle>
+            <circle class="circular-progress-bar" id="gpuCircle" cx="50" cy="50" r="45" 
+                    stroke-dasharray="282.743" stroke-dashoffset="282.743" style="stroke: #8b5cf6;"></circle>
+          </svg>
+          <div class="circular-progress-text">
+            <span class="circular-progress-value" id="gpuValue">0%</span>
+            <span class="circular-progress-label">USAGE</span>
+          </div>
+        </div>
+        
+        <div class="utilization-bar">
+          <div class="utilization-label">
+            <span>Utilization</span>
+            <span id="gpuUtil">0%</span>
+          </div>
+          <div class="utilization-progress">
+            <div class="utilization-fill" id="gpuUtilBar" style="width: 0%; background: linear-gradient(90deg, #8b5cf6 0%, #7c3aed 100%);"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Network Card with Gauges -->
+      <div class="card" id="networkCard">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Network</div>
+            <div class="card-subtitle" id="networkType">Loading...</div>
+          </div>
+        </div>
+
+        <div class="status-badge optimal" id="networkStatusBadge">
+          <span class="status-dot" id="networkStatusDot"></span>
+          <span id="networkName">Connected</span>
+        </div>
+
+        <!-- Network Gauges (shown when connected) -->
+        <div id="networkConnectedContent">
+          <div class="network-gauges">
+            <div class="network-gauge">
+              <canvas id="downloadGauge" width="120" height="60"></canvas>
+              <div class="gauge-label">⬇️ Download</div>
+              <div class="gauge-value" id="downloadSpeed">0 Mbps</div>
+            </div>
+            <div class="network-gauge">
+              <canvas id="uploadGauge" width="120" height="60"></canvas>
+              <div class="gauge-label">⬆️ Upload</div>
+              <div class="gauge-value" id="uploadSpeed">0 Mbps</div>
+            </div>
+          </div>
+
+          <button class="action-button" onclick="showSpeedTest()" style="margin-top: 16px;">
+            ⚡ Test Speed
+          </button>
+        </div>
+
+        <!-- Disconnected content (shown when no internet) -->
+        <div id="networkDisconnectedContent" style="display: none;">
+          <div class="network-disconnected">
+            <div class="network-disconnected-icon">📡</div>
+            <div>No internet connection</div>
+            <div style="font-size: 12px; margin-top: 4px; color: #555;">Check your WiFi or cable connection</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Optimization Card -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Optimization</div>
+            <div class="card-subtitle" id="optimizationSubtitle">1-Click</div>
+          </div>
+        </div>
+
+        <div class="status-badge optimal" id="optimizationBadge">
+          <span class="status-dot"></span>
+          <span id="optimizationMode">Auto Optimization</span>
+        </div>
+
+        <button class="action-button" onclick="showOptimizeModal()" style="margin-top: 24px;">
+          ⚡ Optimize System
+        </button>
+      </div>
+    </div>
+
+    <!-- App Activity Section -->
+    <div class="activity-section">
+      <div class="activity-header">
+        <h3>App Activity</h3>
+        <span class="activity-live">Live</span>
+      </div>
+      <div class="activity-chart" id="activityChart">
+        <div style="text-align: center; padding: 20px; color: #666; font-size: 13px;">Loading app activity...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Updates Page -->
+  <div class="main-content hidden" id="updatesPage">
+    <div class="top-bar">
+      <div class="page-title">Updates</div>
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar2">U</div>
+        <div class="user-name" id="userName2">Loading...</div>
+      </div>
+    </div>
+
+    <div class="update-card">
+      <div class="update-header">
+        <div>
+          <div class="update-title">PC Monitor</div>
+          <div class="update-version">Current version: <span id="currentVersion">3.2.0</span></div>
+        </div>
+        <div class="update-badge" id="updateBadge">Up to date</div>
+      </div>
+
+      <div id="updateCheck">
+        <button class="action-button" onclick="checkForUpdates()">
+          🔄 Check for Updates
+        </button>
+      </div>
+
+      <div id="updateAvailable" style="display: none;">
+        <div class="release-notes">
+          <h4>What's new in version <span id="newVersion"></span></h4>
+          <ul id="releaseNotes"></ul>
+        </div>
+        
+        <button class="action-button" onclick="installUpdate()" style="margin-top: 24px; background: #667eea; border-color: #667eea;">
+          ⬇️ Install Update
+        </button>
+      </div>
+
+      <div id="updateProgress" style="display: none;">
+        <div class="optimization-progress">
+          <div class="optimization-spinner"></div>
+          <div class="optimization-status">Checking for updates...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifications Page -->
+  <div class="main-content hidden" id="notificationsPage">
+    <div class="top-bar">
+      <div class="page-title">Notification Settings</div>
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar3">U</div>
+        <div class="user-name" id="userName3">Loading...</div>
+      </div>
+    </div>
+
+    <div class="update-card">
+      <div class="update-title" style="margin-bottom: 8px;">Desktop Notifications</div>
+      <div class="update-version" style="margin-bottom: 24px;">Choose which notifications you want to receive</div>
+      
+      <div class="settings-list" id="notificationSettings">
+        <div class="loading">Loading settings...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Storage Details View with Dynamic Bar -->
+  <div class="fullscreen-view" id="storageView">
+    <div class="fullscreen-header">
+      <div>
+        <div class="fullscreen-title">Storage Details</div>
+        <div class="fullscreen-subtitle">Breakdown of disk space usage</div>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <button class="action-button secondary" onclick="showSmartCleanup()">
+          🧹 Smart Cleanup
+        </button>
+        <button class="back-btn" onclick="closeStorageView()">← Back</button>
+      </div>
+    </div>
+    
+    <!-- Dynamic Storage Bar -->
+    <div class="storage-bar-header">
+      <div class="storage-bar-info">
+        <div class="storage-bar-title">Storage: C:\</div>
+        <div class="storage-bar-stats">
+          <span id="storageUsed">0 GB</span> / <span id="storageTotal2">0 GB</span>
+        </div>
+      </div>
+      <div class="storage-bar-free" id="storageFreeText">0 GB Free</div>
+      <div class="storage-bar-container">
+        <div class="storage-bar-fill" id="storageBarFill" style="width: 0%"></div>
+      </div>
+    </div>
+    
+    <div class="breadcrumb" id="storageBreadcrumb">
+      <span class="breadcrumb-item" onclick="navigateToRoot()">📁 Root</span>
+    </div>
+    
+    <div class="breakdown-list" id="storageBreakdown">
+      <div style="text-align: center; padding: 40px; color: #666;">Loading...</div>
+    </div>
+  </div>
+
+  <!-- RAM Details View -->
+  <div class="fullscreen-view" id="ramView">
+    <div class="fullscreen-header">
+      <div>
+        <div class="fullscreen-title">RAM Usage</div>
+        <div class="fullscreen-subtitle">Active processes and memory consumption</div>
+      </div>
+      <button class="back-btn" onclick="closeRAMView()">← Back</button>
+    </div>
+    
+    <div class="breakdown-list" id="ramBreakdown">
+      <div style="text-align: center; padding: 40px; color: #666;">Loading...</div>
+    </div>
+  </div>
+
+  <!-- CPU Details View -->
+  <div class="fullscreen-view" id="cpuDetailsView">
+    <div class="fullscreen-header">
+      <div>
+        <div class="fullscreen-title">Processor Details</div>
+        <div class="fullscreen-subtitle">Complete CPU specifications</div>
+      </div>
+      <button class="back-btn" onclick="closeCPUDetails()">← Back</button>
+    </div>
+    
+    <div class="cpu-details-grid" id="cpuDetailsGrid">
+      <div style="text-align: center; padding: 40px; color: #666;">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Network Speed Test View -->
+  <div class="fullscreen-view" id="speedTestView">
+    <div class="fullscreen-header">
+      <div>
+        <div class="fullscreen-title">Network Speed Test</div>
+        <div class="fullscreen-subtitle">Testing connection speed...</div>
+      </div>
+    </div>
+    
+    <div class="speed-test-container">
+      <div id="speedTestProgress">
+        <div class="optimization-spinner" style="margin: 60px auto;"></div>
+        <div class="optimization-status">Running Speed Test...</div>
+        <div class="optimization-detail">This may take a few seconds</div>
+      </div>
+      
+      <div id="speedTestResults" style="display: none;">
+        <div class="speed-results">
+          <div class="speed-result-card">
+            <div class="speed-result-label">Download</div>
+            <div class="speed-result-value" id="downloadResult">0 Mbps</div>
+          </div>
+          <div class="speed-result-card">
+            <div class="speed-result-label">Upload</div>
+            <div class="speed-result-value" id="uploadResult">0 Mbps</div>
+          </div>
+          <div class="speed-result-card">
+            <div class="speed-result-label">Ping</div>
+            <div class="speed-result-value" id="pingResult">0 ms</div>
+          </div>
+          <div class="speed-result-card">
+            <div class="speed-result-label">Jitter</div>
+            <div class="speed-result-value" id="jitterResult">0 ms</div>
+          </div>
+        </div>
+        
+        <button class="action-button" onclick="closeSpeedTest()" style="margin-top: 32px;">
+          Continue
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Smart Cleanup Modal -->
+  <div class="modal" id="smartCleanupModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">🧹 Smart Cleanup</div>
+        <div class="modal-subtitle">Free up disk space by removing unnecessary files</div>
+      </div>
+      
+      <div class="cleanup-total">
+        <div>Total space that can be freed</div>
+        <div class="cleanup-total-size" id="cleanupTotalSize">0 GB</div>
+      </div>
+      
+      <div id="cleanupList"></div>
+      
+      <div class="modal-actions">
+        <button class="action-button secondary" onclick="closeSmartCleanup()">Cancel</button>
+        <button class="action-button" onclick="executeCleanup()" style="background: #667eea; border-color: #667eea;">
+          Clean Selected
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Optimize Modal -->
+  <div class="modal" id="optimizeModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">System Optimization</div>
+        <div class="modal-subtitle">Choose optimization method</div>
+      </div>
+      
+      <div id="optimizeOptions">
+        <div class="modal-section">
+          <div class="modal-section-title">Optimization Mode</div>
+          
+          <div class="optimization-option selected" onclick="selectOptimization(this, 'auto')">
+            <h4>⚡ Auto Optimize</h4>
+            <p>Automatically optimize based on running applications</p>
+          </div>
+          
+          <div class="optimization-option" onclick="selectOptimization(this, 'gaming')">
+            <h4>🎮 Gaming Mode</h4>
+            <p>Optimize system prioritizing gaming performance</p>
+          </div>
+          
+          <div class="optimization-option" onclick="selectOptimization(this, 'creative')">
+            <h4>🎨 Creative Mode</h4>
+            <p>Optimize for design and content creation apps</p>
+          </div>
+          
+          <div class="optimization-option" onclick="selectOptimization(this, 'power')">
+            <h4>🔋 Power Saver</h4>
+            <p>Reduce power consumption and heat generation</p>
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button class="action-button secondary" onclick="closeOptimizeModal()">Cancel</button>
+          <button class="action-button" onclick="startOptimization()" style="background: #667eea; border-color: #667eea;">Start Optimization</button>
+        </div>
+      </div>
+      
+      <div id="optimizeProgress" style="display: none;">
+        <div class="optimization-progress">
+          <div class="optimization-spinner"></div>
+          <div class="optimization-status">Optimizing System...</div>
+          <div class="optimization-detail" id="optimizeDetail">Analyzing system configuration</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- What's New Modal -->
+  <div class="modal" id="whatsNewModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">🎉 What's New in v<span id="whatsNewVersion">3.2.0</span></div>
+        <div class="modal-subtitle">Check out the latest features and improvements</div>
+      </div>
+      
+      <div class="release-notes">
+        <h4>New Features</h4>
+        <ul id="whatsNewList">
+          <li>Dynamic storage bar with real-time updates</li>
+          <li>Smart cleanup to free up disk space</li>
+          <li>Network performance gauges</li>
+          <li>CPU details page with full specifications</li>
+          <li>RAM model information display</li>
+          <li>Motherboard info in welcome section</li>
+          <li>Improved notification system</li>
+        </ul>
+      </div>
+      
+      <div class="modal-actions">
+        <button class="action-button" onclick="closeWhatsNew()" style="background: #667eea; border-color: #667eea; width: 100%;">
+          Get Started
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
+
