@@ -21,8 +21,8 @@ contextBridge.exposeInMainWorld('api', {
   getNetworkInfo: async () => {
     return await ipcRenderer.invoke('get-network-info');
   },
-  checkUpdates: async () => {
-    return await ipcRenderer.invoke('check-updates');
+  checkUpdates: async (installedVersion) => {
+    return await ipcRenderer.invoke('check-updates', installedVersion);
   },
   getNotificationSettings: async () => {
     return await ipcRenderer.invoke('get-notification-settings');
@@ -59,6 +59,15 @@ contextBridge.exposeInMainWorld('api', {
   },
   getCurrentOptimization: async () => {
     return await ipcRenderer.invoke('get-current-optimization');
+  },
+  getNetworkStatus: async () => {
+    return await ipcRenderer.invoke('get-network-status');
+  },
+  getAppActivity: async () => {
+    return await ipcRenderer.invoke('get-app-activity');
+  },
+  checkUpdateAvailable: async (installedVersion) => {
+    return await ipcRenderer.invoke('check-update-available', installedVersion);
   }
 });
 

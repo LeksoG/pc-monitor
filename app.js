@@ -8,6 +8,8 @@ let selectedOptimization = 'auto';
 let currentFolderPath = null;
 let folderHistory = [];
 let selectedCleanupItems = [];
+let isNetworkConnected = true;
+let latestUpdateVersion = null;
 
 // Update circular progress
 function updateCircularProgress(id, percentage) {
@@ -48,14 +50,15 @@ function drawSemicircle(canvasId, percentage, color) {
 
 // Update network gauges
 async function updateNetworkGauges() {
+  if (!isNetworkConnected) return;
   try {
     const stats = await window.api.getNetworkStats();
     const downloadVal = parseFloat(stats.download);
     const uploadVal = parseFloat(stats.upload);
-    
+
     document.getElementById('downloadSpeed').textContent = stats.download + ' Mbps';
     document.getElementById('uploadSpeed').textContent = stats.upload + ' Mbps';
-    
+
     drawSemicircle('downloadGauge', downloadVal, '#3b82f6');
     drawSemicircle('uploadGauge', uploadVal, '#34d399');
   } catch (error) {
@@ -78,6 +81,11 @@ function showPage(page) {
     document.getElementById('updatesPage').classList.remove('hidden');
     document.querySelectorAll('.nav-item')[1].classList.add('active');
     loadUsername();
+    // Show installed version if available
+    const installedVer = getInstalledVersion();
+    if (installedVer) {
+      document.getElementById('currentVersion').textContent = installedVer;
+    }
   } else if (page === 'notifications') {
     document.getElementById('notificationsPage').classList.remove('hidden');
     document.querySelectorAll('.nav-item')[2].classList.add('active');
@@ -527,21 +535,28 @@ function closeSpeedTest() {
   }, 300);
 }
 
+// Get the effective installed version (from localStorage or default)
+function getInstalledVersion() {
+  return localStorage.getItem('installedVersion') || null;
+}
+
 // Check for updates
 async function checkForUpdates() {
   document.getElementById('updateCheck').style.display = 'none';
   document.getElementById('updateProgress').style.display = 'block';
-  
+
   try {
-    const updateInfo = await window.api.checkUpdates();
+    const installedVersion = getInstalledVersion();
+    const updateInfo = await window.api.checkUpdates(installedVersion);
     document.getElementById('updateProgress').style.display = 'none';
     document.getElementById('currentVersion').textContent = updateInfo.currentVersion;
-    
+
     if (updateInfo.hasUpdate) {
+      latestUpdateVersion = updateInfo.latestVersion;
       document.getElementById('updateBadge').textContent = 'Update Available';
       document.getElementById('updateBadge').classList.add('available');
       document.getElementById('newVersion').textContent = updateInfo.latestVersion;
-      
+
       const notesList = document.getElementById('releaseNotes');
       notesList.innerHTML = '';
       updateInfo.releaseNotes.forEach(note => {
@@ -549,37 +564,54 @@ async function checkForUpdates() {
         li.textContent = note;
         notesList.appendChild(li);
       });
-      
+
       document.getElementById('updateAvailable').style.display = 'block';
+
+      // Show red dot on sidebar
+      const dot = document.getElementById('updateDot');
+      if (dot) dot.classList.add('visible');
     } else {
       document.getElementById('updateBadge').textContent = 'Up to date';
+      document.getElementById('updateBadge').classList.remove('available');
       document.getElementById('updateCheck').style.display = 'block';
+
+      // Hide red dot
+      const dot = document.getElementById('updateDot');
+      if (dot) dot.classList.remove('visible');
     }
   } catch (error) {
     console.error('Error checking updates:', error);
+    document.getElementById('updateProgress').style.display = 'none';
+    document.getElementById('updateCheck').style.display = 'block';
   }
 }
 
 // Install update
 async function installUpdate() {
-  // Hide update button, show progress
   document.getElementById('updateAvailable').style.display = 'none';
   document.getElementById('updateProgress').style.display = 'block';
   document.getElementById('updateProgress').querySelector('.optimization-status').textContent = 'Installing update...';
-  
+
   // Simulate update installation
   await new Promise(resolve => setTimeout(resolve, 3000));
-  
-  // Save that we just updated
-  localStorage.setItem('lastVersion', '3.0.0');
-  localStorage.setItem('currentVersion', '3.1.0');
+
+  // Save the new version as installed
+  const newVersion = latestUpdateVersion || '3.1.0';
+  localStorage.setItem('installedVersion', newVersion);
   localStorage.setItem('justUpdated', 'true');
-  
+
+  // Update the displayed version immediately
+  document.getElementById('currentVersion').textContent = newVersion;
+
   // Show completion
   document.getElementById('updateProgress').querySelector('.optimization-status').textContent = 'Update complete! Restarting...';
-  
+
+  // Hide red dot
+  const dot = document.getElementById('updateDot');
+  if (dot) dot.classList.remove('visible');
+
   await new Promise(resolve => setTimeout(resolve, 1500));
-  
+
   // Simulate restart by reloading
   window.location.reload();
 }
@@ -593,13 +625,103 @@ function closeWhatsNew() {
 // Check if just updated and show What's New
 function checkForWhatsNew() {
   const justUpdated = localStorage.getItem('justUpdated');
-  const currentVersion = localStorage.getItem('currentVersion');
-  
-  if (justUpdated === 'true' && currentVersion) {
-    document.getElementById('whatsNewVersion').textContent = currentVersion;
+  const installedVersion = localStorage.getItem('installedVersion');
+
+  if (justUpdated === 'true' && installedVersion) {
+    document.getElementById('whatsNewVersion').textContent = installedVersion;
+    // Update the version display on the updates page
+    document.getElementById('currentVersion').textContent = installedVersion;
     setTimeout(() => {
       document.getElementById('whatsNewModal').classList.add('show');
     }, 1000);
+  }
+}
+
+// Check for updates on startup (for red dot)
+async function checkUpdateOnStartup() {
+  try {
+    const installedVersion = getInstalledVersion();
+    const result = await window.api.checkUpdateAvailable(installedVersion);
+    if (result.hasUpdate) {
+      const dot = document.getElementById('updateDot');
+      if (dot) dot.classList.add('visible');
+      latestUpdateVersion = result.latestVersion;
+    }
+  } catch (error) {
+    // Silently fail on startup check
+  }
+}
+
+// Update network status dynamically
+async function updateNetworkStatus() {
+  try {
+    const status = await window.api.getNetworkStatus();
+    const badge = document.getElementById('networkStatusBadge');
+    const nameEl = document.getElementById('networkName');
+    const typeEl = document.getElementById('networkType');
+    const connectedContent = document.getElementById('networkConnectedContent');
+    const disconnectedContent = document.getElementById('networkDisconnectedContent');
+
+    if (status.connected) {
+      isNetworkConnected = true;
+      badge.className = 'status-badge optimal';
+      nameEl.textContent = status.name || 'Connected';
+      typeEl.textContent = status.type || 'Connected';
+      if (connectedContent) connectedContent.style.display = '';
+      if (disconnectedContent) disconnectedContent.style.display = 'none';
+    } else {
+      isNetworkConnected = false;
+      badge.className = 'status-badge disconnected';
+      nameEl.textContent = 'Not Connected';
+      typeEl.textContent = 'Disconnected';
+      if (connectedContent) connectedContent.style.display = 'none';
+      if (disconnectedContent) disconnectedContent.style.display = '';
+      // Clear gauges
+      document.getElementById('downloadSpeed').textContent = '0 Mbps';
+      document.getElementById('uploadSpeed').textContent = '0 Mbps';
+      drawSemicircle('downloadGauge', 0, '#3b82f6');
+      drawSemicircle('uploadGauge', 0, '#34d399');
+    }
+  } catch (error) {
+    console.error('Error checking network status:', error);
+  }
+}
+
+// Update app activity chart
+async function updateAppActivity() {
+  try {
+    const apps = await window.api.getAppActivity();
+    const container = document.getElementById('activityChart');
+    if (!container) return;
+
+    if (!apps || apps.length === 0) {
+      container.innerHTML = '<div style="text-align: center; padding: 20px; color: #666; font-size: 13px;">No active applications detected</div>';
+      return;
+    }
+
+    // Find max memory for scaling bars
+    const maxMem = Math.max(...apps.map(a => parseFloat(a.memory)));
+
+    let html = '';
+    apps.forEach(app => {
+      const percentage = maxMem > 0 ? (parseFloat(app.memory) / maxMem * 100) : 0;
+      html += `
+        <div class="activity-bar">
+          <div class="activity-app-info">
+            <span class="activity-icon">${app.icon}</span>
+            <span class="activity-name" title="${app.name}">${app.name}</span>
+          </div>
+          <div class="activity-bar-container">
+            <div class="activity-bar-fill" style="width: ${percentage.toFixed(1)}%"></div>
+          </div>
+          <span class="activity-memory">${app.memory} MB</span>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  } catch (error) {
+    console.error('Error updating app activity:', error);
   }
 }
 
@@ -697,25 +819,37 @@ async function updateOptimizationDisplay() {
   try {
     const optimization = await window.api.getCurrentOptimization();
     let displayText = '';
-    
+    let subtitleText = '1-Click';
+
     if (optimization.mode === 'auto') {
       const modeNames = {
-        'gaming': 'Gaming',
-        'creative': 'Creative Work',
-        'browsing': 'Browsing',
-        'balanced': 'Balanced Performance'
+        'gaming': 'Gaming Mode',
+        'creative': 'Creative Mode',
+        'browsing': 'Browsing Mode',
+        'balanced': 'Balanced'
       };
-      displayText = 'Auto: ' + (modeNames[optimization.detected] || 'Balanced');
+      const modeIcons = {
+        'gaming': '🎮',
+        'creative': '🎨',
+        'browsing': '🌐',
+        'balanced': '⚡'
+      };
+      const detected = optimization.detected || 'balanced';
+      displayText = 'Auto: ' + (modeNames[detected] || 'Balanced');
+      subtitleText = (modeIcons[detected] || '⚡') + ' Auto-detected';
     } else {
       const modeNames = {
-        'gaming': 'Optimized for Gaming',
-        'creative': 'Optimized for Creative',
-        'power': 'Power Saver Mode'
+        'gaming': 'Gaming Mode',
+        'creative': 'Creative Mode',
+        'power': 'Power Saver'
       };
       displayText = modeNames[optimization.mode] || 'Optimized';
+      subtitleText = 'Manual';
     }
-    
+
     document.getElementById('optimizationMode').textContent = displayText;
+    const subtitleEl = document.getElementById('optimizationSubtitle');
+    if (subtitleEl) subtitleEl.textContent = subtitleText;
   } catch (error) {
     console.error('Error updating optimization:', error);
   }
@@ -759,8 +893,15 @@ loadSystemInfo();
 loadNetworkInfo();
 updateOptimizationDisplay();
 checkForWhatsNew();
+checkUpdateOnStartup();
+updateNetworkStatus();
+updateAppActivity();
+updateStats();
+updateNetworkGauges();
+
+// Intervals
 setInterval(updateStats, 1000);
 setInterval(updateNetworkGauges, 1000);
 setInterval(updateOptimizationDisplay, 5000);
-updateStats();
-updateNetworkGauges();
+setInterval(updateNetworkStatus, 5000);  // Check connectivity every 5s
+setInterval(updateAppActivity, 3000);    // Update app activity every 3s
