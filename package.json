@@ -47,7 +47,6 @@
           ]
         }
       ],
-      "icon": "build/icon.ico",
       "publisherName": "IQON"
     },
     "nsis": {
@@ -59,7 +58,6 @@
     },
     "mac": {
       "target": "dmg",
-      "icon": "build/icon.icns",
       "category": "public.app-category.utilities"
     },
     "linux": {
@@ -67,7 +65,6 @@
         "AppImage",
         "deb"
       ],
-      "icon": "build/icon.png",
       "category": "Utility"
     }
   }
