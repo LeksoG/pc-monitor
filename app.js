@@ -596,7 +596,7 @@ async function installUpdate() {
   await new Promise(resolve => setTimeout(resolve, 3000));
 
   // Save the new version as installed
-  const newVersion = latestUpdateVersion || '3.1.0';
+  const newVersion = latestUpdateVersion || '3.2.0';
   localStorage.setItem('installedVersion', newVersion);
   localStorage.setItem('justUpdated', 'true');
 

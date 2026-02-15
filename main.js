@@ -11,7 +11,7 @@ let previousCPUInfo = null;
 let runningApps = new Map();
 let currentOptimizationMode = 'auto';
 let lastDetectedMode = 'balanced';
-const CURRENT_VERSION = '3.1.0';
+const CURRENT_VERSION = '3.2.0';
 let notificationSettings = {
   lowStorage: true,
   highCPU: true,
