@@ -3,12 +3,15 @@ const path = require('path');
 const os = require('os');
 const { exec } = require('child_process');
 const fs = require('fs');
+const https = require('https');
+const dns = require('dns');
 
 let mainWindow;
 let previousCPUInfo = null;
 let runningApps = new Map();
 let currentOptimizationMode = 'auto';
-const CURRENT_VERSION = '3.0.0';
+let lastDetectedMode = 'balanced';
+const CURRENT_VERSION = '3.1.0';
 let notificationSettings = {
   lowStorage: true,
   highCPU: true,
@@ -244,32 +247,81 @@ ipcMain.handle('get-network-info', async () => {
   return await getNetworkInfo();
 });
 
+// Version comparison helper
+function compareVersions(a, b) {
+  const partsA = a.split('.').map(Number);
+  const partsB = b.split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((partsA[i] || 0) > (partsB[i] || 0)) return 1;
+    if ((partsA[i] || 0) < (partsB[i] || 0)) return -1;
+  }
+  return 0;
+}
+
+// Fetch latest version from GitHub
+function fetchLatestVersion() {
+  return new Promise((resolve) => {
+    const options = {
+      hostname: 'api.github.com',
+      path: '/repos/LeksoG/pc-monitor/releases/latest',
+      headers: { 'User-Agent': 'IQON-PC-Monitor' },
+      timeout: 5000
+    };
+    const req = https.get(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const version = json.tag_name ? json.tag_name.replace(/^v/, '') : null;
+          const notes = json.body ? json.body.split('\n').filter(l => l.trim().startsWith('-') || l.trim().startsWith('*')).map(l => l.replace(/^[\s\-\*]+/, '').trim()).filter(Boolean) : [];
+          resolve({ version, notes });
+        } catch {
+          resolve({ version: null, notes: [] });
+        }
+      });
+    });
+    req.on('error', () => resolve({ version: null, notes: [] }));
+    req.on('timeout', () => { req.destroy(); resolve({ version: null, notes: [] }); });
+  });
+}
+
 // Check for updates
-ipcMain.handle('check-updates', async () => {
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  const hasUpdate = Math.random() > 0.5;
-  const latestVersion = hasUpdate ? '3.1.0' : CURRENT_VERSION;
-  
+ipcMain.handle('check-updates', async (event, installedVersion) => {
+  const effectiveVersion = installedVersion || CURRENT_VERSION;
+
+  const { version: latestVersion, notes } = await fetchLatestVersion();
+  const latest = latestVersion || CURRENT_VERSION;
+  const hasUpdate = compareVersions(latest, effectiveVersion) > 0;
+
   if (hasUpdate && notificationSettings.updates) {
-    const notifKey = 'update-3.1.0';
+    const notifKey = `update-${latest}`;
     if (!shownNotifications.has(notifKey)) {
-      showNotification('🔄 Update Available', `Version ${latestVersion} is now available!`, 'update');
+      showNotification('🔄 Update Available', `Version ${latest} is now available!`, 'update');
       shownNotifications.add(notifKey);
     }
   }
-  
+
   return {
-    currentVersion: CURRENT_VERSION,
-    latestVersion: latestVersion,
+    currentVersion: effectiveVersion,
+    latestVersion: latest,
     hasUpdate: hasUpdate,
-    releaseNotes: hasUpdate ? [
+    releaseNotes: hasUpdate ? (notes.length > 0 ? notes : [
       'Improved performance monitoring',
       'Enhanced optimization algorithms',
       'Bug fixes and stability improvements',
       'New network diagnostics features'
-    ] : []
+    ]) : []
   };
+});
+
+// Quick update check for startup (returns just boolean + version)
+ipcMain.handle('check-update-available', async (event, installedVersion) => {
+  const effectiveVersion = installedVersion || CURRENT_VERSION;
+  const { version: latestVersion } = await fetchLatestVersion();
+  const latest = latestVersion || CURRENT_VERSION;
+  const hasUpdate = compareVersions(latest, effectiveVersion) > 0;
+  return { hasUpdate, latestVersion: latest };
 });
 
 // Get notification settings
@@ -385,9 +437,20 @@ ipcMain.handle('set-optimization-mode', async (event, mode) => {
 ipcMain.handle('get-current-optimization', async () => {
   if (currentOptimizationMode === 'auto') {
     const detectedMode = detectOptimalMode();
+    lastDetectedMode = detectedMode;
     return { mode: 'auto', detected: detectedMode };
   }
   return { mode: currentOptimizationMode, detected: null };
+});
+
+// Get network connectivity status (dynamic)
+ipcMain.handle('get-network-status', async () => {
+  return await getNetworkStatus();
+});
+
+// Get app activity for real-time graph
+ipcMain.handle('get-app-activity', async () => {
+  return await getAppActivity();
 });
 
 // Get network info
@@ -506,24 +569,186 @@ function getFileIcon(filename) {
   return iconMap[ext] || '📄';
 }
 
-// Detect optimal mode
+// Detect optimal mode with expanded app detection
 function detectOptimalMode() {
-  const gamingApps = ['steam', 'epicgameslauncher', 'origin', 'battle.net', 'discord'];
-  const creativeApps = ['photoshop', 'illustrator', 'premiere', 'aftereffects', 'blender'];
+  const gamingApps = [
+    'steam', 'steamwebhelper', 'epicgameslauncher', 'origin', 'battle.net',
+    'riotclientservices', 'valorant', 'valorant-win64-shipping',
+    'leagueclient', 'league of legends', 'csgo', 'cs2',
+    'fortnite', 'fortniteclient', 'minecraft', 'minecraftlauncher', 'javaw',
+    'robloxplayerbeta', 'robloxstudiobeta',
+    'overwatchlauncher', 'overwatch',
+    'genshinimpact', 'yuanshen', 'eldenring', 'cyberpunk2077',
+    'gtav', 'gta5', 'playgtav', 'rdr2',
+    'dota2', 'apexlegends', 'r5apex',
+    'pubg', 'tslgame', 'callofduty', 'modernwarfare', 'cod',
+    'baldursgate3', 'bg3', 'hogwartslegacy', 'starfield',
+    'diablo', 'pathofexile', 'pathofexile_x64',
+    'rainbowsix', 'r6-siege', 'deadbydaylight',
+    'rocketleague', 'fifa', 'fc24', 'nba2k',
+    'xboxapp', 'gamepass', 'playnite', 'retroarch',
+    'pcsx2', 'dolphin', 'yuzu', 'ryujinx', 'cemu',
+    'warframe', 'destiny2', 'halo', 'haloinfinite',
+    'palworld', 'lethalcompany', 'helldivers2',
+    'warthunder', 'worldoftanks', 'worldofwarships',
+    'terraria', 'stardewvalley', 'factorio',
+    'rust', 'ark', 'dayz', 'escapefromtarkov'
+  ];
+  const creativeApps = [
+    'photoshop', 'illustrator', 'premiere', 'premierepro',
+    'aftereffects', 'blender',
+    'lightroom', 'lightroomclassic', 'indesign', 'animate',
+    'audition', 'mediaencoder', 'characteranimator',
+    'davinciresolve', 'resolve', 'fusion', 'fairlight',
+    'gimp', 'gimp-2.10', 'inkscape', 'krita',
+    'clip studio', 'clipstudiopaint',
+    'figma', 'figmaagent',
+    'affinityphoto', 'affinitydesigner', 'affinitypublisher',
+    'obs64', 'obs', 'streamlabs',
+    'audacity', 'flstudio', 'fl64', 'ableton', 'reaper',
+    'handbrake', 'vegas', 'vegaspro', 'camtasia', 'filmora',
+    'coreldraw', 'paintshoppro',
+    'capcut', 'shotcut', 'kdenlive', 'openshot',
+    'substance', 'substancepainter', 'substancedesigner',
+    'cinema4d', 'c4d', 'maya', 'houdini', '3dsmax',
+    'zbrush', 'marvelousdesigner', 'davinci'
+  ];
   const browserApps = ['chrome', 'firefox', 'msedge'];
-  
+
   let gamingCount = 0, creativeCount = 0, browserCount = 0;
-  
+
   runningApps.forEach((value, processName) => {
     if (gamingApps.some(app => processName.includes(app))) gamingCount++;
     if (creativeApps.some(app => processName.includes(app))) creativeCount++;
     if (browserApps.some(app => processName.includes(app))) browserCount++;
   });
-  
+
   if (gamingCount > 0) return 'gaming';
   if (creativeCount > 0) return 'creative';
   if (browserCount > 2) return 'browsing';
   return 'balanced';
+}
+
+// Get network connectivity status
+async function getNetworkStatus() {
+  return new Promise((resolve) => {
+    // Check actual internet connectivity via DNS
+    dns.lookup('google.com', (err) => {
+      if (err) {
+        resolve({ connected: false, type: 'None', name: 'Not Connected' });
+        return;
+      }
+
+      if (os.platform() !== 'win32') {
+        resolve({ connected: true, type: 'Connected', name: 'Connected' });
+        return;
+      }
+
+      exec('netsh interface show interface', (error, stdout) => {
+        if (error) {
+          resolve({ connected: true, type: 'Unknown', name: 'Connected' });
+          return;
+        }
+
+        let networkType = 'Unknown';
+        let isWiFi = false;
+
+        stdout.split('\n').forEach(line => {
+          if (line.includes('Connected') && line.includes('Dedicated')) {
+            if (line.toLowerCase().includes('wi-fi') || line.toLowerCase().includes('wireless')) {
+              networkType = 'WiFi';
+              isWiFi = true;
+            } else if (line.toLowerCase().includes('ethernet')) {
+              networkType = 'Ethernet';
+            }
+          }
+        });
+
+        if (isWiFi) {
+          exec('netsh wlan show interfaces', (err2, stdout2) => {
+            if (!err2 && stdout2) {
+              const match = stdout2.match(/SSID\s+:\s+(.+)/);
+              resolve({ connected: true, type: 'WiFi', name: match ? match[1].trim() : 'WiFi' });
+            } else {
+              resolve({ connected: true, type: 'WiFi', name: 'WiFi Network' });
+            }
+          });
+        } else {
+          resolve({ connected: true, type: networkType, name: networkType === 'Ethernet' ? 'Wired Connection' : 'Connected' });
+        }
+      });
+    });
+  });
+}
+
+// Get real-time app activity from running processes
+async function getAppActivity() {
+  return new Promise((resolve) => {
+    if (os.platform() !== 'win32') {
+      resolve([]);
+      return;
+    }
+
+    exec('tasklist /fo csv /nh', (error, stdout) => {
+      if (error) { resolve([]); return; }
+
+      const apps = new Map();
+      const systemProcesses = [
+        'system', 'idle', 'registry', 'smss', 'csrss', 'wininit',
+        'services', 'lsass', 'svchost', 'fontdrvhost', 'dwm',
+        'sihost', 'taskhostw', 'ctfmon', 'runtimebroker',
+        'searchhost', 'startmenuexperiencehost', 'textinputhost',
+        'shellexperiencehost', 'dllhost', 'conhost',
+        'securityhealthservice', 'securityhealthsystray',
+        'searchindexer', 'aggregatorhost', 'crashpad_handler',
+        'wmiprvse', 'spoolsv', 'lsaiso', 'memory compression',
+        'msdtc', 'searchprotocolhost', 'searchfilterhost',
+        'applicationframehost', 'systemsettings', 'smartscreen',
+        'comppkgsrv', 'dashost', 'gamebarpresencewriter',
+        'yourphone', 'windowsterminal', 'ntoskrnl',
+        'widgetservice', 'widgets', 'lockapp'
+      ];
+
+      const lines = stdout.split('\n');
+      lines.forEach(line => {
+        const match = line.match(/"([^"]+)","(\d+)","[^"]*","[^"]*","([^"]+)"/);
+        if (match) {
+          const rawName = match[1].replace('.exe', '');
+          const name = rawName.toLowerCase();
+          const memStr = match[3].replace(/[^0-9]/g, '');
+          const memKB = parseInt(memStr);
+
+          if (!systemProcesses.includes(name) && memKB > 5000) {
+            if (apps.has(name)) {
+              apps.get(name).memory += memKB;
+              apps.get(name).instances++;
+            } else {
+              apps.set(name, {
+                name: getFriendlyAppName(name) || rawName,
+                processName: name,
+                memory: memKB,
+                instances: 1,
+                icon: getAppIcon(name)
+              });
+            }
+          }
+        }
+      });
+
+      const result = Array.from(apps.values())
+        .sort((a, b) => b.memory - a.memory)
+        .slice(0, 10)
+        .map(app => ({
+          name: app.name,
+          processName: app.processName,
+          memory: (app.memory / 1024).toFixed(1),
+          instances: app.instances,
+          icon: app.icon
+        }));
+
+      resolve(result);
+    });
+  });
 }
 
 // Get storage breakdown
@@ -619,7 +844,42 @@ function getFriendlyAppName(processName) {
     'code': 'VS Code',
     'discord': 'Discord',
     'spotify': 'Spotify',
-    'steam': 'Steam'
+    'steam': 'Steam',
+    'steamwebhelper': 'Steam',
+    'epicgameslauncher': 'Epic Games',
+    'slack': 'Slack',
+    'teams': 'Microsoft Teams',
+    'outlook': 'Outlook',
+    'explorer': 'File Explorer',
+    'windowsterminal': 'Terminal',
+    'photoshop': 'Photoshop',
+    'illustrator': 'Illustrator',
+    'premiere': 'Premiere Pro',
+    'aftereffects': 'After Effects',
+    'blender': 'Blender',
+    'figma': 'Figma',
+    'obs64': 'OBS Studio',
+    'obs': 'OBS Studio',
+    'valorant': 'Valorant',
+    'valorant-win64-shipping': 'Valorant',
+    'riotclientservices': 'Riot Client',
+    'leagueclient': 'League of Legends',
+    'telegram': 'Telegram',
+    'whatsapp': 'WhatsApp',
+    'notion': 'Notion',
+    'postman': 'Postman',
+    'gimp-2.10': 'GIMP',
+    'gimp': 'GIMP',
+    'audacity': 'Audacity',
+    'vlc': 'VLC Player',
+    'notepad++': 'Notepad++',
+    'winrar': 'WinRAR',
+    '7zfm': '7-Zip',
+    'powershell': 'PowerShell',
+    'cmd': 'Command Prompt',
+    'msedgewebview2': 'Edge WebView',
+    'onedrive': 'OneDrive',
+    'dropbox': 'Dropbox'
   };
   return appNames[processName.toLowerCase()] || null;
 }
@@ -628,9 +888,17 @@ function getFriendlyAppName(processName) {
 function getAppIcon(name) {
   const iconMap = {
     'chrome': '🌐', 'firefox': '🦊', 'msedge': '🌊',
-    'code': '💻', 'discord': '💬', 'spotify': '🎵', 'steam': '🎮'
+    'code': '💻', 'discord': '💬', 'spotify': '🎵', 'steam': '🎮',
+    'epicgameslauncher': '🎮', 'slack': '💬', 'teams': '👥',
+    'outlook': '📧', 'explorer': '📁', 'photoshop': '🎨',
+    'illustrator': '🎨', 'premiere': '🎬', 'aftereffects': '🎬',
+    'blender': '🎨', 'figma': '🎨', 'obs': '📹', 'obs64': '📹',
+    'valorant': '🎮', 'riotclient': '🎮', 'telegram': '💬',
+    'whatsapp': '💬', 'notion': '📝', 'vlc': '🎬',
+    'gimp': '🎨', 'audacity': '🎵', 'powershell': '⚡',
+    'onedrive': '☁️', 'dropbox': '☁️', 'postman': '📡'
   };
-  
+
   for (const [key, icon] of Object.entries(iconMap)) {
     if (name.includes(key)) return icon;
   }
@@ -756,4 +1024,5 @@ async function getStorageInfo() {
 app.whenReady().then(createWindow);
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+
 });
