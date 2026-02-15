@@ -622,6 +622,14 @@ function closeWhatsNew() {
   localStorage.removeItem('justUpdated');
 }
 
+// Set the displayed version from localStorage on every load
+function initVersionDisplay() {
+  const installedVersion = localStorage.getItem('installedVersion');
+  if (installedVersion) {
+    document.getElementById('currentVersion').textContent = installedVersion;
+  }
+}
+
 // Check if just updated and show What's New
 function checkForWhatsNew() {
   const justUpdated = localStorage.getItem('justUpdated');
@@ -629,8 +637,9 @@ function checkForWhatsNew() {
 
   if (justUpdated === 'true' && installedVersion) {
     document.getElementById('whatsNewVersion').textContent = installedVersion;
-    // Update the version display on the updates page
     document.getElementById('currentVersion').textContent = installedVersion;
+    // Clear the flag so it only shows once
+    localStorage.removeItem('justUpdated');
     setTimeout(() => {
       document.getElementById('whatsNewModal').classList.add('show');
     }, 1000);
@@ -892,6 +901,7 @@ loadUsername();
 loadSystemInfo();
 loadNetworkInfo();
 updateOptimizationDisplay();
+initVersionDisplay();
 checkForWhatsNew();
 checkUpdateOnStartup();
 updateNetworkStatus();
