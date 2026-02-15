@@ -9,7 +9,8 @@
     "build:win": "electron-builder --win",
     "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux",
-    "pack": "electron-builder --dir"
+    "pack": "electron-builder --dir",
+    "vercel-build": "echo 'Static site - no build needed'"
   },
   "keywords": [
     "pc-monitor",
@@ -26,7 +27,7 @@
   "build": {
     "appId": "com.iqon.pcmonitor",
     "productName": "IQON PC Monitor",
-    "copyright": "Copyright © 2025 IQON",
+    "copyright": "Copyright ï¿½ 2025 IQON",
     "directories": {
       "output": "dist"
     },

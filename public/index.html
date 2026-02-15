@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IQON - PC Monitor | Download Now</title>
+  <meta name="description" content="IQON PC Monitor - Real-time CPU, RAM, GPU, and storage monitoring with smart cleanup and system optimization. Download free for Windows.">
+  <meta name="theme-color" content="#0a0a0a">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F5A5;</text></svg>">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #0a0a0a;
+      color: #ffffff;
+      overflow-x: hidden;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 20px 80px;
+      background: rgba(10, 10, 10, 0.8);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid #1a1a1a;
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      align-items: center;
+    }
+
+    .nav-links a {
+      color: #888;
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    .nav-links a:hover {
+      color: #fff;
+    }
+
+    .download-nav-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 10px 24px;
+      border-radius: 8px;
+      color: #fff !important;
+      font-weight: 600;
+      transition: transform 0.2s;
+    }
+
+    .download-nav-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 100px 80px 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(102, 126, 234, 0.15) 0%, transparent 70%);
+      top: -200px;
+      right: -200px;
+      animation: pulse 8s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.5; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .hero-content {
+      max-width: 1200px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      z-index: 1;
+    }
+
+    .hero-text h1 {
+      font-size: 64px;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #ffffff 0%, #888 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-text p {
+      font-size: 20px;
+      color: #888;
+      margin-bottom: 40px;
+      line-height: 1.6;
+    }
+
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 18px 40px;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 18px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s;
+      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+      border: none;
+      cursor: pointer;
+    }
+
+    .download-btn:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
+    }
+
+    .download-info {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .hero-visual {
+      position: relative;
+      height: 500px;
+    }
+
+    .app-mockup {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
+      border: 2px solid #667eea;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mockup-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 20px;
+      border-bottom: 1px solid #1f1f1f;
+    }
+
+    .mockup-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .mockup-stats {
+      padding: 30px 40px;
+    }
+
+    .stat-item {
+      margin-bottom: 28px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #888;
+    }
+
+    .stat-bar {
+      height: 6px;
+      background: #1a1a1a;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .stat-fill {
+      height: 100%;
+      border-radius: 3px;
+      animation: fill 3s ease-in-out infinite;
+    }
+
+    .stat-fill.cpu { background: linear-gradient(90deg, #667eea, #764ba2); }
+    .stat-fill.ram { background: linear-gradient(90deg, #34d399, #10b981); }
+    .stat-fill.gpu { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
+    .stat-fill.storage { background: linear-gradient(90deg, #f59e0b, #d97706); }
+
+    @keyframes fill {
+      0%, 100% { width: 45%; }
+      50% { width: 75%; }
+    }
+
+    .stat-fill.ram { animation-delay: 0.5s; }
+    .stat-fill.gpu { animation-delay: 1s; }
+    .stat-fill.storage { animation-delay: 1.5s; }
+
+    /* Features Section */
+    .features {
+      padding: 120px 80px;
+      background: #0f0f0f;
+    }
+
+    .features h2 {
+      font-size: 48px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 80px;
+    }
+
+    .features-grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+    }
+
+    .feature-card {
+      background: #141414;
+      border: 1px solid #1f1f1f;
+      border-radius: 16px;
+      padding: 40px;
+      transition: all 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: #667eea;
+      transform: translateY(-8px);
+      box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
+    }
+
+    .feature-icon {
+      font-size: 48px;
+      margin-bottom: 24px;
+    }
+
+    .feature-card h3 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      color: #888;
+      line-height: 1.6;
+    }
+
+    /* Screenshots Section */
+    .screenshots {
+      padding: 120px 80px;
+    }
+
+    .screenshots h2 {
+      font-size: 48px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .screenshots p {
+      text-align: center;
+      font-size: 20px;
+      color: #888;
+      margin-bottom: 60px;
+    }
+
+    .screenshot-grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .screenshot-card {
+      background: #141414;
+      border: 1px solid #1f1f1f;
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+    }
+
+    .screenshot-card .demo-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    .screenshot-card h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .screenshot-card p {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 0;
+    }
+
+    /* Download Section */
+    .download-section {
+      padding: 120px 80px;
+      text-align: center;
+      background: #0f0f0f;
+    }
+
+    .download-section h2 {
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 24px;
+    }
+
+    .download-section > p {
+      font-size: 20px;
+      color: #888;
+      margin-bottom: 40px;
+    }
+
+    .platform-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-top: 40px;
+      flex-wrap: wrap;
+    }
+
+    .platform-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #141414;
+      border: 2px solid #1f1f1f;
+      padding: 16px 32px;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .platform-btn:hover {
+      border-color: #667eea;
+      background: #1a1a1a;
+      transform: translateY(-2px);
+    }
+
+    .platform-btn.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .platform-btn.disabled:hover {
+      border-color: #1f1f1f;
+      background: #141414;
+      transform: none;
+    }
+
+    .platform-icon {
+      font-size: 24px;
+    }
+
+    /* Footer */
+    footer {
+      padding: 60px 80px;
+      border-top: 1px solid #1a1a1a;
+      text-align: center;
+      color: #666;
+    }
+
+    footer p {
+      margin-bottom: 8px;
+    }
+
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .hero-content {
+        grid-template-columns: 1fr;
+        gap: 60px;
+      }
+
+      .hero-visual {
+        height: 400px;
+      }
+
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .screenshot-grid {
+        grid-template-columns: 1fr;
+      }
+
+      nav {
+        padding: 20px 40px;
+      }
+
+      .hero, .features, .download-section, .screenshots {
+        padding-left: 40px;
+        padding-right: 40px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      nav {
+        padding: 16px 20px;
+      }
+
+      .nav-links {
+        gap: 20px;
+      }
+
+      .nav-links a:not(.download-nav-btn) {
+        display: none;
+      }
+
+      .hero {
+        padding: 120px 20px 60px;
+      }
+
+      .hero-text h1 {
+        font-size: 36px;
+      }
+
+      .hero-text p {
+        font-size: 16px;
+      }
+
+      .hero-visual {
+        height: 300px;
+      }
+
+      .features, .download-section, .screenshots {
+        padding: 80px 20px;
+      }
+
+      .features h2, .download-section h2, .screenshots h2 {
+        font-size: 32px;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .platform-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      footer {
+        padding: 40px 20px;
+      }
+    }
+
+    /* Floating animation */
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+
+    .hero-visual {
+      animation: float 6s ease-in-out infinite;
+    }
+
+    /* Particles Background */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #667eea;
+      border-radius: 50%;
+      opacity: 0.3;
+      animation: particle-float 10s linear infinite;
+    }
+
+    @keyframes particle-float {
+      0% {
+        transform: translateY(100vh) translateX(0);
+        opacity: 0;
+      }
+      10% {
+        opacity: 0.3;
+      }
+      90% {
+        opacity: 0.3;
+      }
+      100% {
+        transform: translateY(-100px) translateX(100px);
+        opacity: 0;
+      }
+    }
+
+    .version-badge {
+      display: inline-block;
+      background: rgba(102, 126, 234, 0.1);
+      color: #667eea;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #141414;
+      border: 1px solid #667eea;
+      border-radius: 12px;
+      padding: 16px 24px;
+      color: #fff;
+      font-size: 14px;
+      z-index: 10000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s;
+      max-width: 360px;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <!-- Particles Background -->
+  <div class="particles" id="particles"></div>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="logo">IQON</div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#download">Download</a>
+      <a href="#about">About</a>
+      <a href="#download" class="download-nav-btn">Get IQON</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-text">
+        <div class="version-badge">v3.1.0 Available Now</div>
+        <h1>Monitor Your PC Like Never Before</h1>
+        <p>IQON gives you real-time insights into your computer's performance with a beautiful, easy-to-use interface. Smart cleanup, detailed stats, and intelligent optimization - all in one place.</p>
+
+        <a class="download-btn" href="https://github.com/LeksoG/pc-monitor/releases/latest" target="_blank" rel="noopener noreferrer">
+          <span>&#11015;</span>
+          Download for Windows
+        </a>
+        <div class="download-info">Free &bull; Windows 10/11 &bull; ~80MB</div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="app-mockup">
+          <div class="mockup-header">
+            <div class="mockup-dot" style="background: #ef4444;"></div>
+            <div class="mockup-dot" style="background: #f59e0b;"></div>
+            <div class="mockup-dot" style="background: #34d399;"></div>
+            <span style="color: #555; font-size: 12px; margin-left: 8px;">IQON PC Monitor</span>
+          </div>
+          <div class="mockup-stats">
+            <div class="stat-item">
+              <div class="stat-row">
+                <span>CPU Usage</span>
+                <span style="color: #667eea;">45%</span>
+              </div>
+              <div class="stat-bar">
+                <div class="stat-fill cpu"></div>
+              </div>
+            </div>
+
+            <div class="stat-item">
+              <div class="stat-row">
+                <span>RAM Usage</span>
+                <span style="color: #34d399;">58%</span>
+              </div>
+              <div class="stat-bar">
+                <div class="stat-fill ram"></div>
+              </div>
+            </div>
+
+            <div class="stat-item">
+              <div class="stat-row">
+                <span>GPU Usage</span>
+                <span style="color: #8b5cf6;">32%</span>
+              </div>
+              <div class="stat-bar">
+                <div class="stat-fill gpu"></div>
+              </div>
+            </div>
+
+            <div class="stat-item">
+              <div class="stat-row">
+                <span>Storage</span>
+                <span style="color: #f59e0b;">245 GB Used</span>
+              </div>
+              <div class="stat-bar">
+                <div class="stat-fill storage"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features" id="features">
+    <h2>Powerful Features</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">&#9889;</div>
+        <h3>Real-Time Monitoring</h3>
+        <p>Track CPU, RAM, GPU, and storage usage in real-time with beautiful circular progress indicators and live graphs.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#129529;</div>
+        <h3>Smart Cleanup</h3>
+        <p>Automatically detect and remove junk files, temporary data, and duplicates to free up valuable disk space.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#127760;</div>
+        <h3>Network Insights</h3>
+        <p>Monitor your internet connection with live download/upload speeds and run comprehensive speed tests.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#128190;</div>
+        <h3>Storage Manager</h3>
+        <p>Browse folders, view file sizes, and delete unwanted files directly from the app with real-time updates.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#127918;</div>
+        <h3>Auto Optimization</h3>
+        <p>Intelligent system optimization that adapts to your usage - gaming, creative work, or general use.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#128276;</div>
+        <h3>Smart Notifications</h3>
+        <p>Get notified about low storage, high CPU usage, or available updates - customize what alerts you want.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#128187;</div>
+        <h3>Hardware Details</h3>
+        <p>View detailed CPU specifications, RAM model, motherboard info, and GPU details all in one place.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#128202;</div>
+        <h3>Process Manager</h3>
+        <p>See which apps are using the most RAM and CPU with a clean, easy-to-read breakdown.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#127912;</div>
+        <h3>Beautiful Interface</h3>
+        <p>Dark theme with smooth animations, vibrant colors, and a modern design that's easy on the eyes.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- App Preview Section -->
+  <section class="screenshots" id="preview">
+    <h2>See It In Action</h2>
+    <p>A sleek dashboard that puts all your PC stats at your fingertips</p>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <div class="demo-icon">&#128200;</div>
+        <h3>Dashboard Overview</h3>
+        <p>Real-time CPU, RAM, GPU and storage metrics with circular progress indicators</p>
+      </div>
+      <div class="screenshot-card">
+        <div class="demo-icon">&#128421;</div>
+        <h3>Hardware Details</h3>
+        <p>Complete system specs including motherboard, CPU cores/threads, and cache info</p>
+      </div>
+      <div class="screenshot-card">
+        <div class="demo-icon">&#128230;</div>
+        <h3>Storage Management</h3>
+        <p>Browse files, view disk breakdown, and clean up space with smart suggestions</p>
+      </div>
+      <div class="screenshot-card">
+        <div class="demo-icon">&#128640;</div>
+        <h3>System Optimization</h3>
+        <p>One-click optimization with gaming, creative, and power saver modes</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download Section -->
+  <section class="download-section" id="download">
+    <h2>Ready to Get Started?</h2>
+    <p>Download IQON now and take control of your PC's performance</p>
+
+    <a class="download-btn" href="https://github.com/LeksoG/pc-monitor/releases/latest" target="_blank" rel="noopener noreferrer">
+      <span>&#11015;</span>
+      Download IQON v3.1.0
+    </a>
+
+    <div class="platform-buttons">
+      <a class="platform-btn" href="https://github.com/LeksoG/pc-monitor/releases/latest" target="_blank" rel="noopener noreferrer">
+        <span class="platform-icon">&#129695;</span>
+        <div>
+          <div style="font-size: 12px; color: #888;">Download for</div>
+          <div>Windows 10/11</div>
+        </div>
+      </a>
+
+      <div class="platform-btn disabled">
+        <span class="platform-icon">&#127822;</span>
+        <div>
+          <div style="font-size: 12px; color: #888;">Coming Soon</div>
+          <div>macOS</div>
+        </div>
+      </div>
+
+      <div class="platform-btn disabled">
+        <span class="platform-icon">&#128039;</span>
+        <div>
+          <div style="font-size: 12px; color: #888;">Coming Soon</div>
+          <div>Linux</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer id="about">
+    <p>&copy; 2025 IQON PC Monitor. All rights reserved.</p>
+    <p>Made with &#10084; for PC enthusiasts</p>
+    <p><a href="#features">Features</a> &bull; <a href="#download">Download</a> &bull; <a href="https://github.com/LeksoG/pc-monitor" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+  </footer>
+
+  <!-- Toast for mobile users -->
+  <div class="toast" id="mobileToast"></div>
+
+  <script>
+    // Create particles
+    function createParticles() {
+      var particles = document.getElementById('particles');
+      for (var i = 0; i < 30; i++) {
+        var particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 10 + 's';
+        particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+        particles.appendChild(particle);
+      }
+    }
+    createParticles();
+
+    // Smooth scroll for navigation
+    document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        var target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // Show toast for mobile users
+    function showToast(message) {
+      var toast = document.getElementById('mobileToast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(function() {
+        toast.classList.remove('show');
+      }, 4000);
+    }
+
+    // Detect mobile and show helpful message
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      setTimeout(function() {
+        showToast('IQON is a desktop app. Visit this page on your PC to download!');
+      }, 2000);
+    }
+  </script>
+</body>
+</html>
