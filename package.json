@@ -55,11 +55,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "IQON PC Monitor",
-      "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico",
-      "installerHeaderIcon": "build/icon.ico",
-      "license": "LICENSE.txt"
+      "shortcutName": "IQON PC Monitor"
     },
     "mac": {
       "target": "dmg",
