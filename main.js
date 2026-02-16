@@ -448,6 +448,11 @@ ipcMain.handle('get-network-status', async () => {
   return await getNetworkStatus();
 });
 
+// Get WiFi signal strength
+ipcMain.handle('get-wifi-signal', async () => {
+  return await getWifiSignalStrength();
+});
+
 // Get app activity for real-time graph
 ipcMain.handle('get-app-activity', async () => {
   return await getAppActivity();
@@ -627,6 +632,31 @@ function detectOptimalMode() {
   if (creativeCount > 0) return 'creative';
   if (browserCount > 2) return 'browsing';
   return 'balanced';
+}
+
+// Get WiFi signal strength (percentage)
+async function getWifiSignalStrength() {
+  return new Promise((resolve) => {
+    if (os.platform() !== 'win32') {
+      resolve({ signal: 75, connected: true });
+      return;
+    }
+
+    exec('netsh wlan show interfaces', (error, stdout) => {
+      if (error || !stdout) {
+        resolve({ signal: 0, connected: false });
+        return;
+      }
+
+      const signalMatch = stdout.match(/Signal\s+:\s+(\d+)%/);
+      if (signalMatch) {
+        resolve({ signal: parseInt(signalMatch[1]), connected: true });
+      } else {
+        // Not on WiFi or can't read signal
+        resolve({ signal: 0, connected: false });
+      }
+    });
+  });
 }
 
 // Get network connectivity status

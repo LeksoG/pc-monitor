@@ -449,7 +449,7 @@
           <span>⬇️</span>
           Download for Windows
         </button>
-        <div class="download-info">Free • Windows 10/11 • 45MB</div>
+        <div class="download-info">Free • Windows 10/11 & macOS • 45MB</div>
       </div>
 
       <div class="hero-visual">
@@ -569,13 +569,13 @@
         </div>
       </a>
       
-      <div class="platform-btn" style="opacity: 0.5; cursor: not-allowed;">
+      <a class="platform-btn" onclick="downloadMac(); return false;">
         <span class="platform-icon">🍎</span>
         <div>
-          <div style="font-size: 12px; color: #888;">Coming Soon</div>
+          <div style="font-size: 12px; color: #888;">Download for</div>
           <div>macOS</div>
         </div>
-      </div>
+      </a>
       
       <div class="platform-btn" style="opacity: 0.5; cursor: not-allowed;">
         <span class="platform-icon">🐧</span>
@@ -613,10 +613,21 @@
     function downloadApp() {
       const downloadUrl = 'https://github.com/LeksoG/pc-monitor/releases/latest/download/IQON.PC.Monitor.Setup.3.2.0.exe';
 
-      // Create hidden link and trigger download
       const link = document.createElement('a');
       link.href = downloadUrl;
       link.download = 'IQON PC Monitor Setup 3.2.0.exe';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Download function for macOS
+    function downloadMac() {
+      const downloadUrl = 'https://github.com/LeksoG/pc-monitor/releases/latest/download/IQON.PC.Monitor-3.2.0.dmg';
+
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = 'IQON PC Monitor 3.2.0.dmg';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
