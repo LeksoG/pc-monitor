@@ -440,7 +440,7 @@ function setupAutoUpdater() {
   autoUpdater.on('update-available', (info) => {
     sendUpdateStatus('available', info.version);
     if (notificationSettings.updates) {
-      showNotification('Update Available', `Version ${info.version} is downloading...`, 'update');
+      showNotification('Update Available', `Version ${info.version} is downloading. See the app for progress.`, 'update');
     }
   });
 
@@ -449,7 +449,12 @@ function setupAutoUpdater() {
   });
 
   autoUpdater.on('download-progress', (progress) => {
-    sendUpdateStatus('downloading', null, Math.round(progress.percent));
+    sendUpdateStatus('downloading', null, {
+      percent: Math.round(progress.percent),
+      bytesPerSecond: progress.bytesPerSecond,
+      transferred: progress.transferred,
+      total: progress.total
+    });
   });
 
   autoUpdater.on('update-downloaded', (info) => {
