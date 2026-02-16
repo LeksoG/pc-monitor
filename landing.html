@@ -489,13 +489,7 @@
         }
 
         function downloadMac() {
-            const downloadUrl = 'https://github.com/LeksoG/pc-monitor/releases/latest/download/IQON.PC.Monitor-3.5.0.dmg';
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = 'IQON PC Monitor 3.5.0.dmg';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            window.location.href = 'https://github.com/LeksoG/pc-monitor/releases/latest/download/IQON.PC.Monitor-3.5.0.dmg';
         }
     </script>
 </body>
