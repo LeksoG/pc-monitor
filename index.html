@@ -73,6 +73,144 @@
       font-size: 18px;
     }
 
+    .nav-item {
+      position: relative;
+    }
+
+    .update-dot {
+      width: 8px;
+      height: 8px;
+      background: #dc2626;
+      border-radius: 50%;
+      margin-left: auto;
+      box-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes dotPulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(220, 38, 38, 0.6); }
+      50% { opacity: 0.6; box-shadow: 0 0 16px rgba(220, 38, 38, 0.9); }
+    }
+
+    /* Updates Page */
+    .updates-page-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 80px);
+      padding: 40px 20px;
+    }
+
+    .updates-glass-panel {
+      background: rgba(10, 10, 10, 0.9);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(220, 38, 38, 0.2);
+      border-radius: 2px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      padding: 48px;
+      max-width: 560px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .updates-glass-panel .update-tag {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      color: #dc2626;
+      margin-bottom: 20px;
+    }
+
+    .updates-glass-panel .update-heading {
+      font-size: 28px;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-style: italic;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+
+    .updates-glass-panel .update-heading .highlight {
+      color: #dc2626;
+      text-shadow: 0 0 15px rgba(220, 38, 38, 0.6), 0 0 30px rgba(220, 38, 38, 0.2);
+    }
+
+    .updates-glass-panel .update-description {
+      font-size: 14px;
+      color: #888;
+      line-height: 1.7;
+      margin-bottom: 32px;
+    }
+
+    .updates-glass-panel .update-version-badge {
+      display: inline-block;
+      background: rgba(220, 38, 38, 0.1);
+      border: 1px solid rgba(220, 38, 38, 0.3);
+      padding: 6px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #dc2626;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    .updates-download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #dc2626;
+      box-shadow: 0 0 20px rgba(220, 38, 38, 0.3);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      font-weight: 900;
+      font-size: 11px;
+      padding: 16px 36px;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .updates-download-btn:hover {
+      background: #fff;
+      color: #dc2626;
+      box-shadow: 0 0 40px rgba(255, 255, 255, 0.4);
+    }
+
+    .updates-no-update {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .updates-no-update .check-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .updates-no-update .status-text {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .updates-no-update .sub-text {
+      font-size: 13px;
+      color: #555;
+    }
+
     /* Main Content */
     .main-content {
       margin-left: 240px;
@@ -1672,39 +1810,6 @@
   </style>
 </head>
 <body>
-  <!-- Auto-Update Banner -->
-  <style>
-    @keyframes updatePulse {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
-    }
-    .update-progress-animated {
-      background: linear-gradient(90deg, #dc2626 0%, #f59e0b 30%, #dc2626 60%) !important;
-      background-size: 200% 100% !important;
-      animation: updatePulse 2s linear infinite !important;
-      width: 100% !important;
-    }
-  </style>
-  <div id="updateBanner" style="display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:99999; background:#141414; border:1px solid #dc2626; border-radius:12px; padding:16px 24px; box-shadow:0 8px 32px rgba(220,38,38,0.3); min-width:380px;">
-    <div style="display:flex; align-items:center; gap:16px; margin-bottom:8px;">
-      <div style="flex:1;">
-        <div style="font-size:14px; font-weight:600;" id="updateBannerTitle">Update Available</div>
-        <div style="font-size:12px; color:#888;" id="updateBannerText">A new version is downloading...</div>
-      </div>
-      <button onclick="installUpdate()" id="updateBannerBtn" style="display:none; padding:8px 20px; background:#dc2626; border:none; border-radius:6px; color:#fff; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;">Restart & Update</button>
-      <button onclick="dismissUpdateBanner()" style="background:none; border:none; color:#555; cursor:pointer; font-size:18px; padding:0 4px;">&times;</button>
-    </div>
-    <div id="updateProgressContainer" style="display:none;">
-      <div style="height:8px; background:#1a1a1a; border-radius:4px; overflow:hidden; margin-bottom:6px;">
-        <div id="updateProgressBar" style="height:100%; background:linear-gradient(90deg, #dc2626 0%, #f59e0b 100%); border-radius:4px; transition:width 0.3s ease; width:0%;"></div>
-      </div>
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-size:11px; color:#666;" id="updateProgressText">Downloading...</span>
-        <span style="font-size:11px; font-weight:700; color:#dc2626;" id="updateProgressPercent">0%</span>
-      </div>
-    </div>
-  </div>
-
   <!-- Delete Progress Notification -->
   <div class="delete-progress" id="deleteProgress">
     <div class="delete-progress-text">Deleting file...</div>
@@ -1726,6 +1831,12 @@
     <div class="nav-item" onclick="showPage('notifications')">
       <span class="nav-item-icon">🔔</span>
       Notifications
+    </div>
+
+    <div class="nav-item" onclick="showPage('updates')" id="updatesNavItem">
+      <span class="nav-item-icon">🔄</span>
+      Updates
+      <span class="update-dot" id="updateDot" style="display:none;"></span>
     </div>
   </div>
 
@@ -2048,6 +2159,20 @@
       
       <div class="settings-list" id="notificationSettings">
         <div class="loading">Loading settings...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Updates Page -->
+  <div class="main-content hidden" id="updatesPage">
+    <div class="top-bar">
+      <div class="page-title">Updates</div>
+    </div>
+    <div class="updates-page-container" id="updatesContent">
+      <div class="updates-no-update" id="updatesNoUpdate">
+        <div class="check-icon">✓</div>
+        <div class="status-text">You're up to date</div>
+        <div class="sub-text">IQON v<span id="updatesCurrentVersion">--</span> is the latest version</div>
       </div>
     </div>
   </div>
