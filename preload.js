@@ -71,6 +71,15 @@ contextBridge.exposeInMainWorld('api', {
   },
   checkUpdateAvailable: async (installedVersion) => {
     return await ipcRenderer.invoke('check-update-available', installedVersion);
+  },
+  checkForUpdates: async () => {
+    return await ipcRenderer.invoke('check-for-updates');
+  },
+  installUpdateNow: async () => {
+    return await ipcRenderer.invoke('install-update-now');
+  },
+  onUpdateStatus: (callback) => {
+    ipcRenderer.on('update-status', (event, data) => callback(data));
   }
 });
 
