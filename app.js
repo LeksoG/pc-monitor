@@ -21,6 +21,7 @@ let previousFpsData = {};
 let fpsScrollOffset = 0;       // Continuous scroll offset for smooth animation
 let lastFpsDrawTime = 0;       // For requestAnimationFrame timing
 let fpsDataDirty = false;      // Whether new data has arrived
+let fpsInterpolatedData = {};  // Smoothly interpolated data for rendering
 
 // Update circular progress
 function updateCircularProgress(id, percentage) {
@@ -182,7 +183,8 @@ async function updateFPSData() {
     });
 
     updateFPSToggles();
-    fpsScrollOffset = 0; // Reset scroll when new data point arrives
+    // Smoothly reset scroll offset instead of hard reset to prevent jump
+    fpsScrollOffset = Math.max(0, fpsScrollOffset - (fpsScrollOffset * 0.5));
     updateFPSLegend();
   } catch (error) {
     console.error('Error updating FPS data:', error);
@@ -240,13 +242,18 @@ function drawFPSChart(timestamp) {
   const dpr = window.devicePixelRatio || 1;
   const rect = container.getBoundingClientRect();
 
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  canvas.style.width = rect.width + 'px';
-  canvas.style.height = rect.height + 'px';
+  // Only resize canvas when container size actually changes to prevent flicker
+  const targetW = Math.round(rect.width * dpr);
+  const targetH = Math.round(rect.height * dpr);
+  if (canvas.width !== targetW || canvas.height !== targetH) {
+    canvas.width = targetW;
+    canvas.height = targetH;
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+  }
 
   const ctx = canvas.getContext('2d');
-  ctx.scale(dpr, dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   const w = rect.width;
   const h = rect.height;
@@ -254,27 +261,56 @@ function drawFPSChart(timestamp) {
   const chartW = w - padding.left - padding.right;
   const chartH = h - padding.top - padding.bottom;
 
-  // Smooth scroll offset - advances continuously between data updates
-  if (timestamp && lastFpsDrawTime) {
-    const dt = timestamp - lastFpsDrawTime;
-    // Scroll the chart smoothly: full segment width over 1000ms (data interval)
+  // Smooth time-based scroll offset
+  if (!timestamp) timestamp = performance.now();
+  if (lastFpsDrawTime) {
+    const dt = Math.min(timestamp - lastFpsDrawTime, 50); // Cap dt to prevent jumps
     const segmentWidth = chartW / (FPS_HISTORY_LENGTH - 1);
     fpsScrollOffset += (dt / 1000) * segmentWidth;
+    // Smoothly wrap the scroll offset to prevent accumulation
+    if (fpsScrollOffset > segmentWidth * 1.5) {
+      fpsScrollOffset = fpsScrollOffset % segmentWidth;
+    }
   }
-  lastFpsDrawTime = timestamp || performance.now();
+  lastFpsDrawTime = timestamp;
+
+  // Interpolate data values smoothly between updates
+  Object.entries(fpsAppData).forEach(([name, app]) => {
+    if (!fpsInterpolatedData[name]) {
+      fpsInterpolatedData[name] = [...app.data];
+    } else {
+      const interp = fpsInterpolatedData[name];
+      // Ensure same length
+      while (interp.length < app.data.length) interp.push(app.data[interp.length]);
+      while (interp.length > app.data.length) interp.pop();
+      // Smooth interpolation towards target values
+      for (let i = 0; i < app.data.length; i++) {
+        interp[i] = interp[i] + (app.data[i] - interp[i]) * 0.15;
+      }
+    }
+  });
+  // Clean up interpolated data for removed apps
+  Object.keys(fpsInterpolatedData).forEach(name => {
+    if (!fpsAppData[name]) delete fpsInterpolatedData[name];
+  });
 
   // Clear
   ctx.clearRect(0, 0, w, h);
 
-  // Find max FPS across all enabled apps
-  let maxFPS = 120;
-  Object.values(fpsAppData).forEach(app => {
+  // Find max FPS across all enabled apps (use interpolated data for smooth scaling)
+  let targetMaxFPS = 120;
+  Object.entries(fpsAppData).forEach(([name, app]) => {
     if (app.enabled && app.data.length > 0) {
       const appMax = Math.max(...app.data);
-      if (appMax > maxFPS) maxFPS = appMax;
+      if (appMax > targetMaxFPS) targetMaxFPS = appMax;
     }
   });
-  maxFPS = Math.ceil(maxFPS / 30) * 30;
+  targetMaxFPS = Math.ceil(targetMaxFPS / 30) * 30;
+
+  // Smooth the max FPS scale changes
+  if (!drawFPSChart._smoothMaxFPS) drawFPSChart._smoothMaxFPS = targetMaxFPS;
+  drawFPSChart._smoothMaxFPS += (targetMaxFPS - drawFPSChart._smoothMaxFPS) * 0.08;
+  const maxFPS = drawFPSChart._smoothMaxFPS;
 
   // Draw grid lines
   ctx.strokeStyle = '#1a1a1a';
@@ -300,28 +336,28 @@ function drawFPSChart(timestamp) {
   ctx.rect(padding.left, padding.top, chartW, chartH);
   ctx.clip();
 
-  // Draw each app's line with smooth continuous scrolling
+  // Catmull-Rom to Bezier conversion for smoother curves
+  function catmullRomToBezier(p0, p1, p2, p3, tension) {
+    const t = tension || 0.35;
+    return {
+      cp1x: p1.x + (p2.x - p0.x) * t,
+      cp1y: p1.y + (p2.y - p0.y) * t,
+      cp2x: p2.x - (p3.x - p1.x) * t,
+      cp2y: p2.y - (p3.y - p1.y) * t
+    };
+  }
+
+  // Draw each app's line with smooth interpolated data
   Object.entries(fpsAppData).forEach(([name, app]) => {
-    if (!app.enabled || app.data.length < 2) return;
+    if (!app.enabled) return;
+    const interpData = fpsInterpolatedData[name];
+    if (!interpData || interpData.length < 2) return;
 
-    const segW = chartW / (FPS_HISTORY_LENGTH - 1);
-
-    // Map data points, offset by scroll for smooth motion
-    const points = app.data.map((fps, i) => ({
+    // Map data points with smooth scroll offset
+    const points = interpData.map((fps, i) => ({
       x: padding.left + (i / (FPS_HISTORY_LENGTH - 1)) * chartW - fpsScrollOffset,
-      y: padding.top + chartH - (fps / maxFPS) * chartH
+      y: padding.top + chartH - (Math.max(0, fps) / maxFPS) * chartH
     }));
-
-    // Catmull-Rom to Bezier conversion for smoother curves
-    function catmullRomToBezier(p0, p1, p2, p3, tension) {
-      const t = tension || 0.3;
-      return {
-        cp1x: p1.x + (p2.x - p0.x) * t,
-        cp1y: p1.y + (p2.y - p0.y) * t,
-        cp2x: p2.x - (p3.x - p1.x) * t,
-        cp2y: p2.y - (p3.y - p1.y) * t
-      };
-    }
 
     // Draw gradient fill under line
     ctx.beginPath();
@@ -347,7 +383,7 @@ function drawFPSChart(timestamp) {
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // Draw the line
+    // Draw the line with anti-aliasing
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
     for (let i = 1; i < points.length; i++) {
@@ -360,15 +396,18 @@ function drawFPSChart(timestamp) {
     }
     ctx.strokeStyle = app.color;
     ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
     ctx.stroke();
 
-    // Glowing endpoint dot
+    // Glowing endpoint dot with smooth pulse
     if (points.length > 0) {
       const last = points[points.length - 1];
+      const pulse = 0.7 + Math.sin(timestamp / 400) * 0.3;
       // Glow
       ctx.beginPath();
-      ctx.arc(last.x, last.y, 8, 0, Math.PI * 2);
-      ctx.fillStyle = app.color + '30';
+      ctx.arc(last.x, last.y, 8 * pulse, 0, Math.PI * 2);
+      ctx.fillStyle = app.color + '25';
       ctx.fill();
       // Outer dot
       ctx.beginPath();
@@ -1225,11 +1264,85 @@ async function applyFanSpeed(value) {
   }
 }
 
+// ========== Recent Apps FPS Tracking ==========
+let recentAppsFPSHistory = {}; // { appName: { icon, fpsHistory: [], highFps: 0, lowFps: Infinity, totalFps: 0, count: 0 } }
+
+function updateRecentAppsFPS() {
+  const container = document.getElementById('recentAppsFPS');
+  if (!container) return;
+
+  // Update FPS history from current fpsAppData
+  Object.entries(fpsAppData).forEach(([name, app]) => {
+    if (!recentAppsFPSHistory[name]) {
+      recentAppsFPSHistory[name] = {
+        icon: app.icon,
+        highFps: 0,
+        lowFps: Infinity,
+        totalFps: 0,
+        count: 0
+      };
+    }
+
+    if (app.data.length > 0) {
+      const latestFps = app.data[app.data.length - 1];
+      const entry = recentAppsFPSHistory[name];
+      entry.icon = app.icon;
+      if (latestFps > entry.highFps) entry.highFps = latestFps;
+      if (latestFps < entry.lowFps) entry.lowFps = latestFps;
+      entry.totalFps += latestFps;
+      entry.count++;
+    }
+  });
+
+  const apps = Object.entries(recentAppsFPSHistory);
+  if (apps.length === 0) {
+    container.innerHTML = '<div style="text-align:center; padding:20px; color:#555; font-size:13px; grid-column:1/-1;">No app performance data yet...</div>';
+    return;
+  }
+
+  let html = '';
+  apps.forEach(([name, data]) => {
+    const avgFps = data.count > 0 ? Math.round(data.totalFps / data.count) : 0;
+    const highFps = Math.round(data.highFps);
+    const lowFps = data.lowFps === Infinity ? 0 : Math.round(data.lowFps);
+
+    html += `
+      <div class="recent-app-card">
+        <div class="recent-app-icon">${data.icon}</div>
+        <div class="recent-app-info">
+          <div class="recent-app-name">${name}</div>
+          <div class="recent-app-fps-stats">
+            <div class="fps-stat">
+              <span class="fps-stat-label">H:</span>
+              <span class="fps-stat-value high">${highFps}</span>
+            </div>
+            <div class="fps-stat">
+              <span class="fps-stat-label">Avg:</span>
+              <span class="fps-stat-value avg">${avgFps}</span>
+            </div>
+            <div class="fps-stat">
+              <span class="fps-stat-label">L:</span>
+              <span class="fps-stat-value low">${lowFps}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
 // ========== Game Mode Listener ==========
 function setupGameModeListener() {
   if (window.api.onGameModeChanged) {
     window.api.onGameModeChanged((active) => {
       console.log('Game mode:', active ? 'ON' : 'OFF');
+    });
+  }
+  if (window.api.onCreatorModeChanged) {
+    window.api.onCreatorModeChanged((active) => {
+      console.log('Creator mode:', active ? 'ON' : 'OFF');
     });
   }
 }
@@ -1254,6 +1367,7 @@ updateNetworkGauges();
 setupUpdateListener();
 setupGameModeListener();
 startFPSAnimation();
+updateRecentAppsFPS();
 
 // Intervals
 setInterval(updateStats, 1000);
@@ -1262,3 +1376,4 @@ setInterval(updateOptimizationDisplay, 5000);
 setInterval(updateNetworkStatus, 5000);
 setInterval(updateWifiSignal, 3000);
 setInterval(updateFPSData, 1000);    // Update FPS chart data every second (animation runs at 60fps)
+setInterval(updateRecentAppsFPS, 2000); // Update recent apps FPS stats every 2 seconds
