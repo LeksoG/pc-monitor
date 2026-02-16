@@ -1169,45 +1169,41 @@ function setupUpdateListener() {
 
       if (data.status === 'available') {
         banner.style.display = 'block';
-        title.textContent = 'Update Available';
-        text.textContent = `Version ${data.version} is being downloaded...`;
+        title.textContent = 'Downloading Update';
+        text.textContent = `Version ${data.version} is downloading...`;
         btn.style.display = 'none';
         progressContainer.style.display = 'block';
-        progressBar.style.width = '0%';
-        progressPercent.textContent = '0%';
-        progressText.textContent = 'Starting download...';
+        // Show animated pulsing bar immediately so user sees activity
+        progressBar.classList.add('update-progress-animated');
+        progressPercent.textContent = '';
+        progressText.textContent = 'Downloading...';
         updateVersion = data.version;
       } else if (data.status === 'downloading') {
+        // Real progress event received - switch from animated to real bar
         const progress = data.progress || {};
         const pct = progress.percent || 0;
         banner.style.display = 'block';
         title.textContent = 'Downloading Update';
         btn.style.display = 'none';
         progressContainer.style.display = 'block';
+        // Remove pulse animation, show real progress
+        progressBar.classList.remove('update-progress-animated');
         progressBar.style.width = pct + '%';
         progressPercent.textContent = pct + '%';
 
-        // Show real download info: speed + transferred/total
         if (progress.total && progress.transferred) {
           text.textContent = `v${updateVersion || 'update'} — ${formatBytes(progress.transferred)} / ${formatBytes(progress.total)}`;
           progressText.textContent = formatSpeed(progress.bytesPerSecond || 0);
         } else {
           text.textContent = `Downloading v${updateVersion || 'new version'}...`;
-          if (pct < 30) {
-            progressText.textContent = 'Downloading core files...';
-          } else if (pct < 70) {
-            progressText.textContent = 'Downloading components...';
-          } else if (pct < 95) {
-            progressText.textContent = 'Almost done...';
-          } else {
-            progressText.textContent = 'Finalizing download...';
-          }
+          progressText.textContent = pct + '% downloaded';
         }
       } else if (data.status === 'ready') {
         banner.style.display = 'block';
         title.textContent = 'Update Ready!';
         text.textContent = `Version ${data.version} is ready to install`;
         progressContainer.style.display = 'block';
+        progressBar.classList.remove('update-progress-animated');
         progressBar.style.width = '100%';
         progressPercent.textContent = '100%';
         progressText.textContent = 'Restarting in 3 seconds...';
@@ -1215,7 +1211,6 @@ function setupUpdateListener() {
         updateReady = true;
         updateVersion = data.version;
 
-        // Store the new version so What's New shows after restart
         localStorage.setItem('justUpdated', 'true');
         localStorage.setItem('installedVersion', data.version);
 
@@ -1236,7 +1231,6 @@ function setupUpdateListener() {
       } else if (data.status === 'up-to-date') {
         // Don't show anything if up to date
       } else if (data.status === 'error') {
-        // Silently fail - don't bother user
         console.log('Update check error:', data.error);
       }
     });
