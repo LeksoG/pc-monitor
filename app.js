@@ -12,7 +12,7 @@ let isNetworkConnected = true;
 
 // ========== FPS Chart State ==========
 const FPS_HISTORY_LENGTH = 60; // 60 data points
-const fpsColors = ['#667eea', '#34d399', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#3b82f6', '#14b8a6'];
+const fpsColors = ['#dc2626', '#34d399', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 let fpsAppData = {}; // { appName: { color, data: [], enabled: true, icon } }
 let fpsAnimationFrame = null;
 let previousFpsData = {};
