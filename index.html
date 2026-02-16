@@ -1464,6 +1464,16 @@
   </style>
 </head>
 <body>
+  <!-- Auto-Update Banner -->
+  <div id="updateBanner" style="display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:99999; background:#141414; border:1px solid #dc2626; border-radius:12px; padding:16px 24px; box-shadow:0 8px 32px rgba(220,38,38,0.3); display:none; align-items:center; gap:16px;">
+    <div>
+      <div style="font-size:14px; font-weight:600;" id="updateBannerTitle">Update Available</div>
+      <div style="font-size:12px; color:#888;" id="updateBannerText">A new version is downloading...</div>
+    </div>
+    <button onclick="installUpdate()" id="updateBannerBtn" style="display:none; padding:8px 20px; background:#dc2626; border:none; border-radius:6px; color:#fff; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;">Restart & Update</button>
+    <button onclick="dismissUpdateBanner()" style="background:none; border:none; color:#555; cursor:pointer; font-size:18px; padding:0 4px;">&times;</button>
+  </div>
+
   <!-- Delete Progress Notification -->
   <div class="delete-progress" id="deleteProgress">
     <div class="delete-progress-text">Deleting file...</div>
@@ -1983,20 +1993,20 @@
   <div class="modal" id="whatsNewModal">
     <div class="modal-content">
       <div class="modal-header">
-        <div class="modal-title">🎉 What's New in v<span id="whatsNewVersion">3.2.0</span></div>
+        <div class="modal-title">🎉 What's New in v<span id="whatsNewVersion">3.3.0</span></div>
         <div class="modal-subtitle">Check out the latest features and improvements</div>
       </div>
       
       <div class="release-notes">
         <h4>New Features</h4>
         <ul id="whatsNewList">
-          <li>Dynamic storage bar with real-time updates</li>
-          <li>Smart cleanup to free up disk space</li>
-          <li>Network performance gauges</li>
-          <li>CPU details page with full specifications</li>
-          <li>RAM model information display</li>
-          <li>Motherboard info in welcome section</li>
-          <li>Improved notification system</li>
+          <li>WiFi signal strength bars with color-coded indicator</li>
+          <li>FPS line chart with smooth animation per app</li>
+          <li>App toggle buttons to filter FPS chart</li>
+          <li>New red/black gaming theme throughout the app</li>
+          <li>Auto-update - no more manual reinstalls</li>
+          <li>macOS support now available</li>
+          <li>Redesigned landing page with beehive animation</li>
         </ul>
       </div>
       
