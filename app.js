@@ -925,13 +925,21 @@ function closeWhatsNew() {
 function checkForWhatsNew() {
   const justUpdated = localStorage.getItem('justUpdated');
   const installedVersion = localStorage.getItem('installedVersion');
+  const lastSeenVersion = localStorage.getItem('lastSeenVersion');
+  const currentVersion = '3.5.0';
 
-  if (justUpdated === 'true' && installedVersion) {
-    document.getElementById('whatsNewVersion').textContent = installedVersion;
+  // Show What's New if: just updated flag is set, or first time seeing this version
+  if (justUpdated === 'true' || (lastSeenVersion && lastSeenVersion !== currentVersion)) {
+    const displayVersion = installedVersion || currentVersion;
+    document.getElementById('whatsNewVersion').textContent = displayVersion;
     localStorage.removeItem('justUpdated');
+    localStorage.setItem('lastSeenVersion', currentVersion);
     setTimeout(() => {
       document.getElementById('whatsNewModal').classList.add('show');
     }, 1000);
+  } else if (!lastSeenVersion) {
+    // First ever launch - just record the version, don't show modal
+    localStorage.setItem('lastSeenVersion', currentVersion);
   }
 }
 
@@ -1133,6 +1141,7 @@ function show3DMotherboard() {
 
 // ========== Auto-Update UI ==========
 let updateReady = false;
+let updateVersion = null;
 
 function setupUpdateListener() {
   if (window.api.onUpdateStatus) {
@@ -1141,23 +1150,69 @@ function setupUpdateListener() {
       const title = document.getElementById('updateBannerTitle');
       const text = document.getElementById('updateBannerText');
       const btn = document.getElementById('updateBannerBtn');
+      const progressContainer = document.getElementById('updateProgressContainer');
+      const progressBar = document.getElementById('updateProgressBar');
+      const progressText = document.getElementById('updateProgressText');
+      const progressPercent = document.getElementById('updateProgressPercent');
 
       if (data.status === 'available') {
-        banner.style.display = 'flex';
+        banner.style.display = 'block';
         title.textContent = 'Update Available';
-        text.textContent = `Version ${data.version} is downloading...`;
+        text.textContent = `Version ${data.version} is being downloaded...`;
         btn.style.display = 'none';
+        progressContainer.style.display = 'block';
+        progressBar.style.width = '0%';
+        progressPercent.textContent = '0%';
+        progressText.textContent = 'Starting download...';
+        updateVersion = data.version;
       } else if (data.status === 'downloading') {
-        banner.style.display = 'flex';
+        banner.style.display = 'block';
         title.textContent = 'Downloading Update';
-        text.textContent = `Progress: ${data.progress}%`;
+        const pct = data.progress || 0;
+        text.textContent = `Downloading v${updateVersion || 'new version'}...`;
         btn.style.display = 'none';
+        progressContainer.style.display = 'block';
+        progressBar.style.width = pct + '%';
+        progressPercent.textContent = pct + '%';
+        if (pct < 30) {
+          progressText.textContent = 'Downloading core files...';
+        } else if (pct < 70) {
+          progressText.textContent = 'Downloading components...';
+        } else if (pct < 95) {
+          progressText.textContent = 'Almost done...';
+        } else {
+          progressText.textContent = 'Finalizing download...';
+        }
       } else if (data.status === 'ready') {
-        banner.style.display = 'flex';
-        title.textContent = 'Update Ready';
+        banner.style.display = 'block';
+        title.textContent = 'Update Ready!';
         text.textContent = `Version ${data.version} is ready to install`;
+        progressContainer.style.display = 'block';
+        progressBar.style.width = '100%';
+        progressPercent.textContent = '100%';
+        progressText.textContent = 'Restarting in 3 seconds...';
         btn.style.display = 'inline-block';
         updateReady = true;
+        updateVersion = data.version;
+
+        // Store the new version so What's New shows after restart
+        localStorage.setItem('justUpdated', 'true');
+        localStorage.setItem('installedVersion', data.version);
+
+        // Auto-restart after 3 seconds
+        let countdown = 3;
+        const countdownInterval = setInterval(() => {
+          countdown--;
+          if (countdown > 0) {
+            progressText.textContent = `Restarting in ${countdown} seconds...`;
+          } else {
+            clearInterval(countdownInterval);
+            progressText.textContent = 'Restarting now...';
+            if (window.api.installUpdateNow) {
+              window.api.installUpdateNow();
+            }
+          }
+        }, 1000);
       } else if (data.status === 'up-to-date') {
         // Don't show anything if up to date
       } else if (data.status === 'error') {
@@ -1170,6 +1225,9 @@ function setupUpdateListener() {
 
 function installUpdate() {
   if (updateReady && window.api.installUpdateNow) {
+    // Mark for What's New display on next launch
+    localStorage.setItem('justUpdated', 'true');
+    if (updateVersion) localStorage.setItem('installedVersion', updateVersion);
     window.api.installUpdateNow();
   }
 }
