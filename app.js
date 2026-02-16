@@ -1,7 +1,9 @@
 // PC Monitor - Frontend JavaScript with FPS Chart, WiFi Signal & Updated Features
 
 if (!window.api) {
-  document.body.innerHTML = '<div style="text-align:center;padding:50px;color:white;"><h1>Error: API not available</h1></div>';
+  // Running in a browser, not Electron - redirect to landing page
+  window.location.replace('landing.html');
+  throw new Error('Not running in Electron');
 }
 
 let selectedOptimization = 'auto';
