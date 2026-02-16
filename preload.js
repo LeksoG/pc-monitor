@@ -66,6 +66,9 @@ contextBridge.exposeInMainWorld('api', {
   getAppActivity: async () => {
     return await ipcRenderer.invoke('get-app-activity');
   },
+  getWifiSignal: async () => {
+    return await ipcRenderer.invoke('get-wifi-signal');
+  },
   checkUpdateAvailable: async (installedVersion) => {
     return await ipcRenderer.invoke('check-update-available', installedVersion);
   }
@@ -73,4 +76,5 @@ contextBridge.exposeInMainWorld('api', {
 
 
 console.log('API exposed to window!');
+
 
