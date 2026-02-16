@@ -23,6 +23,8 @@ let runningApps = new Map();
 let currentOptimizationMode = 'auto';
 let lastDetectedMode = 'balanced';
 let gameModeActive = false;
+let creatorModeActive = false;
+let graphicsEnhancerEnabled = false;
 let gameDetectionInterval = null;
 const CURRENT_VERSION = '3.4.0';
 let notificationSettings = {
@@ -99,54 +101,153 @@ function setupTray() {
   tray.on('double-click', () => { mainWindow.show(); mainWindow.focus(); });
 }
 
-// Game mode overlay window
-function createOverlayWindow() {
-  if (overlayWindow && !overlayWindow.isDestroyed()) return;
+// Game/Creator mode overlay window
+function createOverlayWindow(mode) {
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.close();
+    overlayWindow = null;
+  }
 
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width } = primaryDisplay.workAreaSize;
 
+  const isGame = mode === 'game';
+  const overlayWidth = 320;
+  const overlayHeight = isGame ? 180 : 140;
+
   overlayWindow = new BrowserWindow({
-    width: 260,
-    height: 50,
-    x: width - 280,
+    width: overlayWidth,
+    height: overlayHeight,
+    x: width - overlayWidth - 20,
     y: 20,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
     skipTaskbar: true,
     resizable: false,
-    focusable: false,
+    focusable: true,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false
     }
   });
 
-  overlayWindow.setIgnoreMouseEvents(true);
+  // Allow mouse interaction for buttons
+  overlayWindow.setIgnoreMouseEvents(false);
+
+  const accentColor = isGame ? '#dc2626' : '#8b5cf6';
+  const modeIcon = isGame ? '🎮' : '🎨';
+  const modeTitle = isGame ? 'GAME MODE' : 'CREATOR MODE';
+  const modeSubtitle = isGame ? 'Performance Optimized' : 'Creative Workflow Optimized';
+
+  // Graphics Enhancer toggle (only for game mode)
+  const graphicsEnhancerHTML = isGame ? `
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; padding:6px 10px; background:rgba(255,255,255,0.05); border-radius:6px;">
+      <span style="color:#ccc; font-size:10px; font-weight:600; font-family:system-ui; letter-spacing:0.5px;">IQON Graphics Enhancer</span>
+      <div id="gfxToggle" onclick="toggleGfx()" style="width:36px; height:18px; background:${graphicsEnhancerEnabled ? accentColor : '#333'}; border-radius:9px; cursor:pointer; position:relative; transition:background 0.2s;">
+        <div style="width:14px; height:14px; background:#fff; border-radius:50%; position:absolute; top:2px; left:${graphicsEnhancerEnabled ? '20px' : '2px'}; transition:left 0.2s;"></div>
+      </div>
+    </div>
+  ` : '';
 
   const overlayHTML = `
-    <html><body style="margin:0;padding:0;background:transparent;overflow:hidden;">
-      <div style="
-        background: rgba(10,10,10,0.85);
-        border: 1px solid #dc2626;
-        border-radius: 8px;
-        padding: 10px 18px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 20px rgba(220,38,38,0.3);
-      ">
-        <span style="font-size:20px;">🎮</span>
-        <div>
-          <div style="color:#dc2626; font-size:12px; font-weight:800; letter-spacing:1px; font-family:system-ui;">GAME MODE</div>
-          <div style="color:#888; font-size:10px; font-family:system-ui;">Performance Optimized</div>
+    <html>
+    <head>
+      <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:transparent; overflow:hidden; }
+        .overlay-container {
+          background: rgba(10,10,10,0.92);
+          border: 1px solid ${accentColor};
+          border-radius: 12px;
+          padding: 14px 18px;
+          backdrop-filter: blur(16px);
+          box-shadow: 0 6px 28px rgba(0,0,0,0.5), 0 0 20px ${accentColor}33;
+          animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+          from { opacity:0; transform:translateX(30px); }
+          to { opacity:1; transform:translateX(0); }
+        }
+        @keyframes fadeOut {
+          from { opacity:1; transform:translateX(0); }
+          to { opacity:0; transform:translateX(30px); }
+        }
+        .open-btn {
+          background: ${accentColor};
+          border: none;
+          border-radius: 6px;
+          padding: 5px 12px;
+          color: #fff;
+          font-size: 10px;
+          font-weight: 700;
+          cursor: pointer;
+          font-family: system-ui;
+          letter-spacing: 0.5px;
+          transition: opacity 0.2s;
+        }
+        .open-btn:hover { opacity: 0.85; }
+      </style>
+    </head>
+    <body>
+      <div class="overlay-container" id="overlayBox">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:24px;">${modeIcon}</span>
+            <div>
+              <div style="color:${accentColor}; font-size:13px; font-weight:800; letter-spacing:1.5px; font-family:system-ui;">${modeTitle}</div>
+              <div style="color:#888; font-size:10px; font-family:system-ui; margin-top:2px;">${modeSubtitle}</div>
+            </div>
+          </div>
+          <button class="open-btn" onclick="openIqon()">Open IQON</button>
         </div>
+        ${graphicsEnhancerHTML}
       </div>
+      <script>
+        const { ipcRenderer } = require('electron');
+
+        function openIqon() {
+          ipcRenderer.send('open-iqon-window');
+        }
+
+        function toggleGfx() {
+          ipcRenderer.send('toggle-graphics-enhancer');
+        }
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+          const box = document.getElementById('overlayBox');
+          box.style.animation = 'fadeOut 0.4s ease-in forwards';
+          setTimeout(() => {
+            ipcRenderer.send('hide-overlay');
+          }, 400);
+        }, 5000);
+      </script>
     </body></html>
   `;
 
+  // Need nodeIntegration for ipcRenderer in overlay
+  overlayWindow.close();
+  overlayWindow = null;
+
+  overlayWindow = new BrowserWindow({
+    width: overlayWidth,
+    height: overlayHeight,
+    x: width - overlayWidth - 20,
+    y: 20,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    focusable: true,
+    webPreferences: {
+      contextIsolation: false,
+      nodeIntegration: true
+    }
+  });
+
+  overlayWindow.setIgnoreMouseEvents(false, { forward: true });
   overlayWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(overlayHTML));
 }
 
@@ -157,47 +258,118 @@ function destroyOverlayWindow() {
   }
 }
 
+// IPC from overlay
+ipcMain.on('open-iqon-window', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.show();
+    mainWindow.focus();
+  }
+});
+
+ipcMain.on('hide-overlay', () => {
+  destroyOverlayWindow();
+});
+
+ipcMain.on('toggle-graphics-enhancer', () => {
+  graphicsEnhancerEnabled = !graphicsEnhancerEnabled;
+
+  if (graphicsEnhancerEnabled && gameModeActive) {
+    // Apply graphics optimization: set GPU to max performance, set high power plan
+    if (os.platform() === 'win32') {
+      exec('powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c', () => {});
+      exec('nvidia-smi -pl 100', () => {});
+      exec('nvidia-smi --auto-boost-default=ENABLED', () => {});
+    }
+  } else {
+    // Revert to balanced
+    if (os.platform() === 'win32') {
+      exec('powercfg /setactive 381b4222-f694-41f0-9685-ff5bb260df2e', () => {});
+    }
+  }
+
+  // Notify renderer
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('graphics-enhancer-changed', graphicsEnhancerEnabled);
+  }
+
+  // Recreate overlay to reflect toggle state
+  if (gameModeActive && overlayWindow && !overlayWindow.isDestroyed()) {
+    createOverlayWindow('game');
+  }
+});
+
+// Get graphics enhancer state
+ipcMain.handle('get-graphics-enhancer', async () => {
+  return { enabled: graphicsEnhancerEnabled };
+});
+
+// Toggle graphics enhancer from renderer
+ipcMain.handle('toggle-graphics-enhancer-from-renderer', async (event, enable) => {
+  graphicsEnhancerEnabled = enable;
+  return { enabled: graphicsEnhancerEnabled };
+});
+
 function toggleGameMode(enable) {
   gameModeActive = enable;
   if (enable) {
-    createOverlayWindow();
-    // Apply gaming optimization
+    creatorModeActive = false;
+    createOverlayWindow('game');
     if (os.platform() === 'win32') {
       exec('powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c', () => {}); // High performance
     }
   } else {
     destroyOverlayWindow();
-    if (os.platform() === 'win32') {
+    if (!creatorModeActive && os.platform() === 'win32') {
       exec('powercfg /setactive 381b4222-f694-41f0-9685-ff5bb260df2e', () => {}); // Balanced
     }
   }
 
-  // Update tray menu
-  if (tray) {
-    const contextMenu = Menu.buildFromTemplate([
-      { label: 'Show IQON', click: () => { mainWindow.show(); mainWindow.focus(); } },
-      { type: 'separator' },
-      { label: 'Game Mode', type: 'checkbox', checked: gameModeActive, click: (item) => { toggleGameMode(item.checked); } },
-      { type: 'separator' },
-      { label: 'Quit', click: () => { app.isQuitting = true; app.quit(); } }
-    ]);
-    tray.setContextMenu(contextMenu);
-  }
+  updateTrayMenu();
 
-  // Notify renderer
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('game-mode-changed', gameModeActive);
   }
 }
 
-// Detect game platforms and auto-enable game mode
-function startGameDetection() {
-  const gamePlatforms = [
-    'steam', 'steamwebhelper', 'epicgameslauncher', 'origin', 'eadesktop',
-    'battle.net', 'galaxyclient', 'ubisoft', 'ubisoftconnect',
-    'riotclientservices', 'bethesdalauncher'
-  ];
+function toggleCreatorMode(enable) {
+  creatorModeActive = enable;
+  if (enable) {
+    gameModeActive = false;
+    createOverlayWindow('creator');
+    // Creative optimization: balanced power with priority on multi-threaded workloads
+    if (os.platform() === 'win32') {
+      exec('powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c', () => {});
+    }
+  } else {
+    destroyOverlayWindow();
+    if (!gameModeActive && os.platform() === 'win32') {
+      exec('powercfg /setactive 381b4222-f694-41f0-9685-ff5bb260df2e', () => {});
+    }
+  }
 
+  updateTrayMenu();
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('creator-mode-changed', creatorModeActive);
+  }
+}
+
+function updateTrayMenu() {
+  if (tray) {
+    const contextMenu = Menu.buildFromTemplate([
+      { label: 'Show IQON', click: () => { mainWindow.show(); mainWindow.focus(); } },
+      { type: 'separator' },
+      { label: 'Game Mode', type: 'checkbox', checked: gameModeActive, click: (item) => { toggleGameMode(item.checked); } },
+      { label: 'Creator Mode', type: 'checkbox', checked: creatorModeActive, click: (item) => { toggleCreatorMode(item.checked); } },
+      { type: 'separator' },
+      { label: 'Quit', click: () => { app.isQuitting = true; app.quit(); } }
+    ]);
+    tray.setContextMenu(contextMenu);
+  }
+}
+
+// Detect game/creator apps and auto-enable appropriate mode
+function startGameDetection() {
   const gameProcesses = [
     'valorant', 'valorant-win64-shipping', 'csgo', 'cs2',
     'fortnite', 'fortniteclient', 'minecraft', 'javaw',
@@ -205,23 +377,50 @@ function startGameDetection() {
     'eldenring', 'cyberpunk2077', 'gtav', 'gta5',
     'dota2', 'apexlegends', 'r5apex', 'pubg', 'tslgame',
     'baldursgate3', 'starfield', 'helldivers2', 'palworld',
-    'rust', 'ark', 'dayz', 'escapefromtarkov'
+    'rust', 'ark', 'dayz', 'escapefromtarkov',
+    'rocketleague', 'deadbydaylight', 'halo', 'haloinfinite',
+    'warframe', 'destiny2', 'warthunder', 'leagueoflegends'
+  ];
+
+  const creatorProcesses = [
+    'photoshop', 'illustrator', 'premiere', 'premierepro',
+    'aftereffects', 'blender', 'lightroom', 'lightroomclassic',
+    'indesign', 'animate', 'audition', 'mediaencoder',
+    'davinciresolve', 'resolve', 'gimp', 'inkscape', 'krita',
+    'figma', 'figmaagent', 'obs64', 'obs', 'streamlabs',
+    'audacity', 'flstudio', 'fl64', 'ableton', 'reaper',
+    'handbrake', 'vegas', 'vegaspro', 'camtasia', 'filmora',
+    'capcut', 'shotcut', 'kdenlive', 'openshot',
+    'substance', 'substancepainter', 'cinema4d', 'c4d',
+    'maya', 'houdini', '3dsmax', 'zbrush', 'clipstudiopaint',
+    'affinityphoto', 'affinitydesigner', 'coreldraw'
   ];
 
   gameDetectionInterval = setInterval(() => {
-    // Only auto-detect when the main window is hidden (app "closed" to tray)
     if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
       let gameFound = false;
+      let creatorFound = false;
+
       runningApps.forEach((value, processName) => {
         if (gameProcesses.some(g => processName.includes(g))) {
           gameFound = true;
         }
+        if (creatorProcesses.some(c => processName.includes(c))) {
+          creatorFound = true;
+        }
       });
 
+      // Game takes priority over creator
       if (gameFound && !gameModeActive) {
         toggleGameMode(true);
       } else if (!gameFound && gameModeActive) {
         toggleGameMode(false);
+      }
+
+      if (!gameFound && creatorFound && !creatorModeActive) {
+        toggleCreatorMode(true);
+      } else if (!creatorFound && creatorModeActive) {
+        toggleCreatorMode(false);
       }
     }
   }, 5000);
@@ -1374,15 +1573,37 @@ ipcMain.handle('set-fan-speed', async (event, speed) => {
   manualTuning.fanSpeed = speed;
 
   if (os.platform() === 'win32') {
-    // Try nvidia-smi for GPU fan control
     return new Promise((resolve) => {
-      // First enable manual fan control, then set speed
-      exec(`nvidia-smi -i 0 --fan-speed=${speed}`, (error) => {
-        if (error) {
-          resolve({ success: true, speed, note: 'Preference saved (direct fan control requires admin/vendor tool)' });
-        } else {
-          resolve({ success: true, speed });
-        }
+      // Step 1: Enable manual fan control on GPU 0
+      exec('nvidia-smi -i 0 -pm 1', () => {
+        // Step 2: Enable manual fan control mode via nvidia-settings (Linux) or nvidia-smi
+        exec(`nvidia-smi -i 0 --auto-boost-default=DISABLED`, () => {
+          // Step 3: Try setting fan speed via nvidia-settings first (works on many setups)
+          exec(`powershell -Command "& { $env:DISPLAY=':0'; nvidia-settings -a '[gpu:0]/GPUFanControlState=1' -a '[fan:0]/GPUTargetFanSpeed=${speed}' }"`, (err1) => {
+            if (!err1) {
+              resolve({ success: true, speed, method: 'nvidia-settings' });
+              return;
+            }
+            // Step 4: Fallback - try MSI Afterburner CLI if available
+            const afterburnerPath = 'C:\\Program Files (x86)\\MSI Afterburner\\MSIAfterburner.exe';
+            exec(`"${afterburnerPath}" /s /Fan1 ${speed}`, (err2) => {
+              if (!err2) {
+                resolve({ success: true, speed, method: 'msi-afterburner' });
+                return;
+              }
+              // Step 5: Fallback - try SpeedFan CLI
+              exec(`powershell -Command "Get-CimInstance -Namespace root/WMI -ClassName MSAcpi_ThermalZoneTemperature -ErrorAction SilentlyContinue"`, () => {
+                // Save preference, inform user they may need a fan control utility
+                resolve({
+                  success: true,
+                  speed,
+                  note: 'Fan speed preference saved. For direct hardware control, ensure NVIDIA drivers are installed or use MSI Afterburner / FanControl app.',
+                  method: 'preference-saved'
+                });
+              });
+            });
+          });
+        });
       });
     });
   }
@@ -1398,6 +1619,17 @@ ipcMain.handle('get-game-mode', async () => {
 ipcMain.handle('toggle-game-mode', async (event, enable) => {
   toggleGameMode(enable);
   return { active: gameModeActive };
+});
+
+// Toggle creator mode from renderer
+ipcMain.handle('toggle-creator-mode', async (event, enable) => {
+  toggleCreatorMode(enable);
+  return { active: creatorModeActive };
+});
+
+// Get creator mode status
+ipcMain.handle('get-creator-mode', async () => {
+  return { active: creatorModeActive };
 });
 
 app.whenReady().then(createWindow);

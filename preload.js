@@ -103,6 +103,26 @@ contextBridge.exposeInMainWorld('api', {
   },
   onGameModeChanged: (callback) => {
     ipcRenderer.on('game-mode-changed', (event, active) => callback(active));
+  },
+  // Creator mode APIs
+  getCreatorMode: async () => {
+    return await ipcRenderer.invoke('get-creator-mode');
+  },
+  toggleCreatorMode: async (enable) => {
+    return await ipcRenderer.invoke('toggle-creator-mode', enable);
+  },
+  onCreatorModeChanged: (callback) => {
+    ipcRenderer.on('creator-mode-changed', (event, active) => callback(active));
+  },
+  // Graphics enhancer APIs
+  getGraphicsEnhancer: async () => {
+    return await ipcRenderer.invoke('get-graphics-enhancer');
+  },
+  toggleGraphicsEnhancer: async (enable) => {
+    return await ipcRenderer.invoke('toggle-graphics-enhancer-from-renderer', enable);
+  },
+  onGraphicsEnhancerChanged: (callback) => {
+    ipcRenderer.on('graphics-enhancer-changed', (event, enabled) => callback(enabled));
   }
 });
 
