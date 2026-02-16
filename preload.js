@@ -80,6 +80,29 @@ contextBridge.exposeInMainWorld('api', {
   },
   onUpdateStatus: (callback) => {
     ipcRenderer.on('update-status', (event, data) => callback(data));
+  },
+  // Manual tuning APIs
+  getManualTuning: async () => {
+    return await ipcRenderer.invoke('get-manual-tuning');
+  },
+  setCpuPowerPlan: async (plan) => {
+    return await ipcRenderer.invoke('set-cpu-power-plan', plan);
+  },
+  setGpuPerformance: async (level) => {
+    return await ipcRenderer.invoke('set-gpu-performance', level);
+  },
+  setFanSpeed: async (speed) => {
+    return await ipcRenderer.invoke('set-fan-speed', speed);
+  },
+  // Game mode APIs
+  getGameMode: async () => {
+    return await ipcRenderer.invoke('get-game-mode');
+  },
+  toggleGameMode: async (enable) => {
+    return await ipcRenderer.invoke('toggle-game-mode', enable);
+  },
+  onGameModeChanged: (callback) => {
+    ipcRenderer.on('game-mode-changed', (event, active) => callback(active));
   }
 });
 
