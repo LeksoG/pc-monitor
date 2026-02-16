@@ -2,6 +2,14 @@
 <html>
 <head>
   <title>PC Monitor - Dashboard</title>
+  <script>
+    // If running in a browser (not Electron), redirect to the landing page
+    if (!window.process || !window.process.versions || !window.process.versions.electron) {
+      if (!window.api) {
+        window.location.replace('landing.html');
+      }
+    }
+  </script>
   <style>
     * {
       margin: 0;
