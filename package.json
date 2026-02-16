@@ -1,6 +1,6 @@
 {
   "name": "iqon-pc-monitor",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "IQON - Professional PC Monitoring Application",
   "main": "main.js",
   "scripts": {
@@ -20,6 +20,9 @@
   ],
   "author": "IQON Team",
   "license": "MIT",
+  "dependencies": {
+    "electron-updater": "^6.7.3"
+  },
   "devDependencies": {
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1"
@@ -37,6 +40,13 @@
       "index.html",
       "app.js",
       "package.json"
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "LeksoG",
+        "repo": "pc-monitor"
+      }
     ],
     "win": {
       "target": [
@@ -69,5 +79,4 @@
     }
   }
 }
-
 
