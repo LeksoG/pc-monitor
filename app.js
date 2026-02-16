@@ -18,6 +18,9 @@ const fpsColors = ['#dc2626', '#34d399', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec48
 let fpsAppData = {}; // { appName: { color, data: [], enabled: true, icon } }
 let fpsAnimationFrame = null;
 let previousFpsData = {};
+let fpsScrollOffset = 0;       // Continuous scroll offset for smooth animation
+let lastFpsDrawTime = 0;       // For requestAnimationFrame timing
+let fpsDataDirty = false;      // Whether new data has arrived
 
 // Update circular progress
 function updateCircularProgress(id, percentage) {
@@ -179,7 +182,7 @@ async function updateFPSData() {
     });
 
     updateFPSToggles();
-    drawFPSChart();
+    fpsScrollOffset = 0; // Reset scroll when new data point arrives
     updateFPSLegend();
   } catch (error) {
     console.error('Error updating FPS data:', error);
@@ -228,8 +231,8 @@ function toggleFPSApp(appName) {
   }
 }
 
-// Draw the FPS line chart with smooth animation
-function drawFPSChart() {
+// Draw the FPS line chart with smooth continuous scrolling animation
+function drawFPSChart(timestamp) {
   const canvas = document.getElementById('fpsChart');
   if (!canvas) return;
 
@@ -251,6 +254,15 @@ function drawFPSChart() {
   const chartW = w - padding.left - padding.right;
   const chartH = h - padding.top - padding.bottom;
 
+  // Smooth scroll offset - advances continuously between data updates
+  if (timestamp && lastFpsDrawTime) {
+    const dt = timestamp - lastFpsDrawTime;
+    // Scroll the chart smoothly: full segment width over 1000ms (data interval)
+    const segmentWidth = chartW / (FPS_HISTORY_LENGTH - 1);
+    fpsScrollOffset += (dt / 1000) * segmentWidth;
+  }
+  lastFpsDrawTime = timestamp || performance.now();
+
   // Clear
   ctx.clearRect(0, 0, w, h);
 
@@ -262,7 +274,7 @@ function drawFPSChart() {
       if (appMax > maxFPS) maxFPS = appMax;
     }
   });
-  maxFPS = Math.ceil(maxFPS / 30) * 30; // Round up to nearest 30
+  maxFPS = Math.ceil(maxFPS / 30) * 30;
 
   // Draw grid lines
   ctx.strokeStyle = '#1a1a1a';
@@ -275,44 +287,62 @@ function drawFPSChart() {
   for (let i = 0; i <= gridSteps; i++) {
     const y = padding.top + (chartH / gridSteps) * i;
     const val = Math.round(maxFPS - (maxFPS / gridSteps) * i);
-
     ctx.beginPath();
     ctx.moveTo(padding.left, y);
     ctx.lineTo(w - padding.right, y);
     ctx.stroke();
-
     ctx.fillText(val + ' fps', padding.left - 8, y + 4);
   }
 
-  // Draw each app's line
+  // Clip drawing area
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(padding.left, padding.top, chartW, chartH);
+  ctx.clip();
+
+  // Draw each app's line with smooth continuous scrolling
   Object.entries(fpsAppData).forEach(([name, app]) => {
     if (!app.enabled || app.data.length < 2) return;
 
+    const segW = chartW / (FPS_HISTORY_LENGTH - 1);
+
+    // Map data points, offset by scroll for smooth motion
     const points = app.data.map((fps, i) => ({
-      x: padding.left + (i / (FPS_HISTORY_LENGTH - 1)) * chartW,
+      x: padding.left + (i / (FPS_HISTORY_LENGTH - 1)) * chartW - fpsScrollOffset,
       y: padding.top + chartH - (fps / maxFPS) * chartH
     }));
+
+    // Catmull-Rom to Bezier conversion for smoother curves
+    function catmullRomToBezier(p0, p1, p2, p3, tension) {
+      const t = tension || 0.3;
+      return {
+        cp1x: p1.x + (p2.x - p0.x) * t,
+        cp1y: p1.y + (p2.y - p0.y) * t,
+        cp2x: p2.x - (p3.x - p1.x) * t,
+        cp2y: p2.y - (p3.y - p1.y) * t
+      };
+    }
 
     // Draw gradient fill under line
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
 
-    // Smooth curve using bezier
     for (let i = 1; i < points.length; i++) {
-      const prev = points[i - 1];
-      const curr = points[i];
-      const cpx = (prev.x + curr.x) / 2;
-      ctx.bezierCurveTo(cpx, prev.y, cpx, curr.y, curr.x, curr.y);
+      const p0 = points[Math.max(i - 2, 0)];
+      const p1 = points[i - 1];
+      const p2 = points[i];
+      const p3 = points[Math.min(i + 1, points.length - 1)];
+      const cp = catmullRomToBezier(p0, p1, p2, p3);
+      ctx.bezierCurveTo(cp.cp1x, cp.cp1y, cp.cp2x, cp.cp2y, p2.x, p2.y);
     }
 
-    // Fill area under the curve
     const lastPoint = points[points.length - 1];
     ctx.lineTo(lastPoint.x, padding.top + chartH);
     ctx.lineTo(points[0].x, padding.top + chartH);
     ctx.closePath();
 
     const gradient = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartH);
-    gradient.addColorStop(0, app.color + '25');
+    gradient.addColorStop(0, app.color + '20');
     gradient.addColorStop(1, app.color + '00');
     ctx.fillStyle = gradient;
     ctx.fill();
@@ -321,28 +351,39 @@ function drawFPSChart() {
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
     for (let i = 1; i < points.length; i++) {
-      const prev = points[i - 1];
-      const curr = points[i];
-      const cpx = (prev.x + curr.x) / 2;
-      ctx.bezierCurveTo(cpx, prev.y, cpx, curr.y, curr.x, curr.y);
+      const p0 = points[Math.max(i - 2, 0)];
+      const p1 = points[i - 1];
+      const p2 = points[i];
+      const p3 = points[Math.min(i + 1, points.length - 1)];
+      const cp = catmullRomToBezier(p0, p1, p2, p3);
+      ctx.bezierCurveTo(cp.cp1x, cp.cp1y, cp.cp2x, cp.cp2y, p2.x, p2.y);
     }
     ctx.strokeStyle = app.color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.stroke();
 
-    // Draw endpoint dot
+    // Glowing endpoint dot
     if (points.length > 0) {
       const last = points[points.length - 1];
+      // Glow
+      ctx.beginPath();
+      ctx.arc(last.x, last.y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = app.color + '30';
+      ctx.fill();
+      // Outer dot
       ctx.beginPath();
       ctx.arc(last.x, last.y, 4, 0, Math.PI * 2);
       ctx.fillStyle = app.color;
       ctx.fill();
+      // Inner dot
       ctx.beginPath();
       ctx.arc(last.x, last.y, 2, 0, Math.PI * 2);
       ctx.fillStyle = '#0a0a0a';
       ctx.fill();
     }
   });
+
+  ctx.restore();
 
   // Draw time axis labels
   ctx.fillStyle = '#555';
@@ -353,6 +394,9 @@ function drawFPSChart() {
     const x = padding.left + (i / (timeLabels.length - 1)) * chartW;
     ctx.fillText(label, x, h - 8);
   });
+
+  // Continue smooth animation loop
+  fpsAnimationFrame = requestAnimationFrame(drawFPSChart);
 }
 
 // Update FPS legend
@@ -1095,6 +1139,107 @@ function dismissUpdateBanner() {
   document.getElementById('updateBanner').style.display = 'none';
 }
 
+// ========== Manual Tuning ==========
+
+function showManualTuning() {
+  document.getElementById('homePage').classList.add('hidden');
+  document.getElementById('manualTuningView').classList.add('show');
+  loadManualTuningValues();
+}
+
+function closeManualTuning() {
+  document.getElementById('manualTuningView').classList.remove('show');
+  setTimeout(() => {
+    document.getElementById('homePage').classList.remove('hidden');
+  }, 300);
+}
+
+async function loadManualTuningValues() {
+  try {
+    const tuning = await window.api.getManualTuning();
+
+    // Set CPU plan buttons
+    document.querySelectorAll('#cpuPowerPresets .tuning-preset-btn').forEach(btn => btn.classList.remove('active'));
+    const activeBtn = document.getElementById('cpu-' + tuning.cpuPowerPlan);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    const planNames = { 'power-saver': 'Power Saver', 'balanced': 'Balanced', 'high-performance': 'High Performance' };
+    document.getElementById('cpuPlanStatus').innerHTML = '<span class="status-dot" style="width:6px;height:6px;border-radius:50%;background:#34d399;"></span> Active: ' + (planNames[tuning.cpuPowerPlan] || 'Balanced');
+
+    // Set GPU slider
+    document.getElementById('gpuSlider').value = tuning.gpuPerformance;
+    document.getElementById('gpuSliderValue').textContent = tuning.gpuPerformance + '%';
+    document.getElementById('gpuTuningStatus').innerHTML = '<span class="status-dot" style="width:6px;height:6px;border-radius:50%;background:#34d399;"></span> GPU: ' + tuning.gpuPerformance + '%';
+
+    // Set Fan slider
+    document.getElementById('fanSlider').value = tuning.fanSpeed;
+    document.getElementById('fanSliderValue').textContent = tuning.fanSpeed + '%';
+    document.getElementById('fanTuningStatus').innerHTML = '<span class="status-dot" style="width:6px;height:6px;border-radius:50%;background:#34d399;"></span> Fan: ' + tuning.fanSpeed + '%';
+  } catch (error) {
+    console.error('Error loading tuning values:', error);
+  }
+}
+
+async function setCpuPlan(plan) {
+  document.querySelectorAll('#cpuPowerPresets .tuning-preset-btn').forEach(btn => btn.classList.remove('active'));
+  const activeBtn = document.getElementById('cpu-' + plan);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  const planNames = { 'power-saver': 'Power Saver', 'balanced': 'Balanced', 'high-performance': 'High Performance' };
+  document.getElementById('cpuPlanStatus').innerHTML = '<span class="status-dot" style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Applying...';
+
+  try {
+    const result = await window.api.setCpuPowerPlan(plan);
+    document.getElementById('cpuPlanStatus').innerHTML = '<span class="status-dot" style="width:6px;height:6px;border-radius:50%;background:#34d399;"></span> Active: ' + (planNames[plan] || plan);
+  } catch (error) {
+    console.error('Error setting CPU plan:', error);
+    document.getElementById('cpuPlanStatus').innerHTML = '<span class="status-dot" style="width:6px;height:6px;border-radius:50%;background:#ef4444;"></span> Error applying';
+  }
+}
+
+function onGpuSliderChange(value) {
+  document.getElementById('gpuSliderValue').textContent = value + '%';
+}
+
+async function applyGpuPerformance(value) {
+  document.getElementById('gpuTuningStatus').innerHTML = '<span class="status-dot" style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Applying...';
+  try {
+    await window.api.setGpuPerformance(parseInt(value));
+    document.getElementById('gpuTuningStatus').innerHTML = '<span class="status-dot" style="width:6px;height:6px;border-radius:50%;background:#34d399;"></span> GPU: ' + value + '%';
+  } catch (error) {
+    console.error('Error setting GPU:', error);
+  }
+}
+
+function onFanSliderChange(value) {
+  document.getElementById('fanSliderValue').textContent = value + '%';
+}
+
+async function applyFanSpeed(value) {
+  document.getElementById('fanTuningStatus').innerHTML = '<span class="status-dot" style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></span> Applying...';
+  try {
+    await window.api.setFanSpeed(parseInt(value));
+    document.getElementById('fanTuningStatus').innerHTML = '<span class="status-dot" style="width:6px;height:6px;border-radius:50%;background:#34d399;"></span> Fan: ' + value + '%';
+  } catch (error) {
+    console.error('Error setting fan:', error);
+  }
+}
+
+// ========== Game Mode Listener ==========
+function setupGameModeListener() {
+  if (window.api.onGameModeChanged) {
+    window.api.onGameModeChanged((active) => {
+      console.log('Game mode:', active ? 'ON' : 'OFF');
+    });
+  }
+}
+
+// Start the FPS smooth animation loop
+function startFPSAnimation() {
+  if (fpsAnimationFrame) cancelAnimationFrame(fpsAnimationFrame);
+  fpsAnimationFrame = requestAnimationFrame(drawFPSChart);
+}
+
 // Initialize
 loadUsername();
 loadSystemInfo();
@@ -1107,6 +1252,8 @@ updateFPSData();
 updateStats();
 updateNetworkGauges();
 setupUpdateListener();
+setupGameModeListener();
+startFPSAnimation();
 
 // Intervals
 setInterval(updateStats, 1000);
@@ -1114,4 +1261,4 @@ setInterval(updateNetworkGauges, 1000);
 setInterval(updateOptimizationDisplay, 5000);
 setInterval(updateNetworkStatus, 5000);
 setInterval(updateWifiSignal, 3000);
-setInterval(updateFPSData, 1000);    // Update FPS chart every second
+setInterval(updateFPSData, 1000);    // Update FPS chart data every second (animation runs at 60fps)
