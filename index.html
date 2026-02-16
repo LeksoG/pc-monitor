@@ -1673,7 +1673,7 @@
 </head>
 <body>
   <!-- Auto-Update Banner -->
-  <div id="updateBanner" style="display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:99999; background:#141414; border:1px solid #dc2626; border-radius:12px; padding:16px 24px; box-shadow:0 8px 32px rgba(220,38,38,0.3); align-items:center; gap:16px; min-width:380px;">
+  <div id="updateBanner" style="display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:99999; background:#141414; border:1px solid #dc2626; border-radius:12px; padding:16px 24px; box-shadow:0 8px 32px rgba(220,38,38,0.3); min-width:380px;">
     <div style="display:flex; align-items:center; gap:16px; margin-bottom:8px;">
       <div style="flex:1;">
         <div style="font-size:14px; font-weight:600;" id="updateBannerTitle">Update Available</div>
@@ -1683,8 +1683,8 @@
       <button onclick="dismissUpdateBanner()" style="background:none; border:none; color:#555; cursor:pointer; font-size:18px; padding:0 4px;">&times;</button>
     </div>
     <div id="updateProgressContainer" style="display:none;">
-      <div style="height:6px; background:#1a1a1a; border-radius:3px; overflow:hidden; margin-bottom:6px;">
-        <div id="updateProgressBar" style="height:100%; background:linear-gradient(90deg, #dc2626 0%, #f59e0b 100%); border-radius:3px; transition:width 0.3s ease; width:0%;"></div>
+      <div style="height:8px; background:#1a1a1a; border-radius:4px; overflow:hidden; margin-bottom:6px;">
+        <div id="updateProgressBar" style="height:100%; background:linear-gradient(90deg, #dc2626 0%, #f59e0b 100%); border-radius:4px; transition:width 0.3s ease; width:0%;"></div>
       </div>
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <span style="font-size:11px; color:#666;" id="updateProgressText">Downloading...</span>
@@ -2334,5 +2334,6 @@
 </body>
 
 </html>
+
 
 
