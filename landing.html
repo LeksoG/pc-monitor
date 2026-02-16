@@ -1,648 +1,502 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IQON - PC Monitor | Download Now</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IQON | Next Level PC Monitoring</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <style>
+        :root {
+            --hex-bg: #050505;
+            --hex-red: #ff0000;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--hex-bg);
+            color: #ffffff;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            overflow-x: hidden;
+        }
+        /* Fixed Background Container */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            background: #020202;
+            perspective: 1200px;
+        }
+        /* Tight Hex Grid Layout */
+        .trigger {
+            display: flex;
+            flex-wrap: wrap;
+            width: 120vw;
+            height: 140vh;
+            margin-left: -10vw;
+            margin-top: -20vh;
+            justify-content: center;
+            align-content: center;
+            gap: 4px;
+            transform-style: preserve-3d;
+        }
+        .box {
+            width: 60px;
+            height: 70px;
+            background: #0a0a0a;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            margin-bottom: -18px;
+            will-change: transform, opacity, background-color;
+            border: 1px solid rgba(255, 0, 0, 0.03);
+        }
+        .box:nth-child(even) {
+            transform: translateY(35px);
+        }
+        .glass-panel {
+            background: rgba(8, 8, 8, 0.85);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 0, 0, 0.2);
+            border-radius: 2px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .red-glow-text {
+            text-shadow: 0 0 15px rgba(255, 0, 0, 0.6), 0 0 30px rgba(255, 0, 0, 0.2);
+        }
+        .cta-button {
+            background: #ff0000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-weight: 900;
+            transition: all 0.3s ease;
+        }
+        .cta-button:hover {
+            background: #ffffff;
+            color: #ff0000;
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.4);
+        }
+        details summary::-webkit-details-marker { display: none; }
+        summary { list-style: none; outline: none; }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-      background: #0a0a0a;
-      color: #ffffff;
-      overflow-x: hidden;
-    }
+        .hardware-card {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        details[open] .hardware-card {
+            border-color: #ff0000;
+            background: rgba(255, 0, 0, 0.05);
+        }
+        .ticker-wrap {
+            overflow: hidden;
+            background: #000;
+            border-top: 1px solid rgba(255, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 0, 0, 0.2);
+        }
+        .ticker {
+            display: inline-block;
+            white-space: nowrap;
+            animation: ticker 60s linear infinite;
+        }
+        @keyframes ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .fade-in { opacity: 0; transform: translateY(20px); }
 
-    /* Navigation */
-    nav {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      padding: 20px 80px;
-      background: rgba(10, 10, 10, 0.8);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid #1a1a1a;
-      z-index: 1000;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .logo {
-      font-size: 28px;
-      font-weight: 700;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 40px;
-      align-items: center;
-    }
-
-    .nav-links a {
-      color: #888;
-      text-decoration: none;
-      font-size: 15px;
-      font-weight: 500;
-      transition: color 0.3s;
-    }
-
-    .nav-links a:hover {
-      color: #fff;
-    }
-
-    .download-nav-btn {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 10px 24px;
-      border-radius: 8px;
-      color: #fff !important;
-      font-weight: 600;
-      transition: transform 0.2s;
-    }
-
-    .download-nav-btn:hover {
-      transform: translateY(-2px);
-    }
-
-    /* Hero Section */
-    .hero {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 80px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .hero::before {
-      content: '';
-      position: absolute;
-      width: 800px;
-      height: 800px;
-      background: radial-gradient(circle, rgba(102, 126, 234, 0.15) 0%, transparent 70%);
-      top: -200px;
-      right: -200px;
-      animation: pulse 8s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 0.5; }
-      50% { transform: scale(1.1); opacity: 0.8; }
-    }
-
-    .hero-content {
-      max-width: 1200px;
-      width: 100%;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 80px;
-      align-items: center;
-      z-index: 1;
-    }
-
-    .hero-text h1 {
-      font-size: 64px;
-      font-weight: 800;
-      line-height: 1.1;
-      margin-bottom: 24px;
-      background: linear-gradient(135deg, #ffffff 0%, #888 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .hero-text p {
-      font-size: 20px;
-      color: #888;
-      margin-bottom: 40px;
-      line-height: 1.6;
-    }
-
-    .download-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 18px 40px;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 18px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.3s;
-      box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
-      border: none;
-      cursor: pointer;
-    }
-
-    .download-btn:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
-    }
-
-    .download-info {
-      margin-top: 16px;
-      font-size: 14px;
-      color: #666;
-    }
-
-    .hero-visual {
-      position: relative;
-      height: 500px;
-    }
-
-    .app-mockup {
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%);
-      border: 2px solid #667eea;
-      border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .app-mockup::before {
-      content: '🖥️';
-      position: absolute;
-      font-size: 120px;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      opacity: 0.1;
-    }
-
-    .mockup-stats {
-      position: absolute;
-      top: 40px;
-      left: 40px;
-      right: 40px;
-    }
-
-    .stat-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 16px;
-      font-size: 14px;
-      color: #888;
-    }
-
-    .stat-bar {
-      height: 4px;
-      background: #1a1a1a;
-      border-radius: 2px;
-      margin-top: 8px;
-      overflow: hidden;
-    }
-
-    .stat-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-      border-radius: 2px;
-      animation: fill 2s ease-in-out infinite;
-    }
-
-    @keyframes fill {
-      0%, 100% { width: 45%; }
-      50% { width: 65%; }
-    }
-
-    /* Features Section */
-    .features {
-      padding: 120px 80px;
-      background: #0f0f0f;
-    }
-
-    .features h2 {
-      font-size: 48px;
-      font-weight: 700;
-      text-align: center;
-      margin-bottom: 80px;
-    }
-
-    .features-grid {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 40px;
-    }
-
-    .feature-card {
-      background: #141414;
-      border: 1px solid #1f1f1f;
-      border-radius: 16px;
-      padding: 40px;
-      transition: all 0.3s;
-    }
-
-    .feature-card:hover {
-      border-color: #667eea;
-      transform: translateY(-8px);
-      box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
-    }
-
-    .feature-icon {
-      font-size: 48px;
-      margin-bottom: 24px;
-    }
-
-    .feature-card h3 {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 12px;
-    }
-
-    .feature-card p {
-      color: #888;
-      line-height: 1.6;
-    }
-
-    /* Download Section */
-    .download-section {
-      padding: 120px 80px;
-      text-align: center;
-    }
-
-    .download-section h2 {
-      font-size: 48px;
-      font-weight: 700;
-      margin-bottom: 24px;
-    }
-
-    .download-section p {
-      font-size: 20px;
-      color: #888;
-      margin-bottom: 40px;
-    }
-
-    .platform-buttons {
-      display: flex;
-      gap: 20px;
-      justify-content: center;
-      margin-top: 40px;
-    }
-
-    .platform-btn {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: #141414;
-      border: 2px solid #1f1f1f;
-      padding: 16px 32px;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 16px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: all 0.3s;
-      cursor: pointer;
-    }
-
-    .platform-btn:hover {
-      border-color: #667eea;
-      background: #1a1a1a;
-      transform: translateY(-2px);
-    }
-
-    .platform-icon {
-      font-size: 24px;
-    }
-
-    /* Footer */
-    footer {
-      padding: 60px 80px;
-      background: #0f0f0f;
-      border-top: 1px solid #1a1a1a;
-      text-align: center;
-      color: #666;
-    }
-
-    footer p {
-      margin-bottom: 8px;
-    }
-
-    footer a {
-      color: #667eea;
-      text-decoration: none;
-    }
-
-    /* Responsive */
-    @media (max-width: 1024px) {
-      .hero-content {
-        grid-template-columns: 1fr;
-        gap: 60px;
-      }
-
-      .hero-visual {
-        height: 400px;
-      }
-
-      .features-grid {
-        grid-template-columns: 1fr;
-      }
-
-      nav {
-        padding: 20px 40px;
-      }
-
-      .hero, .features, .download-section {
-        padding: 80px 40px;
-      }
-    }
-
-    /* Floating animation */
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-20px); }
-    }
-
-    .hero-visual {
-      animation: float 6s ease-in-out infinite;
-    }
-
-    /* Particles Background */
-    .particles {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .particle {
-      position: absolute;
-      width: 4px;
-      height: 4px;
-      background: #667eea;
-      border-radius: 50%;
-      opacity: 0.3;
-      animation: particle-float 10s linear infinite;
-    }
-
-    @keyframes particle-float {
-      0% {
-        transform: translateY(100vh) translateX(0);
-        opacity: 0;
-      }
-      10% {
-        opacity: 0.3;
-      }
-      90% {
-        opacity: 0.3;
-      }
-      100% {
-        transform: translateY(-100px) translateX(100px);
-        opacity: 0;
-      }
-    }
-
-    .version-badge {
-      display: inline-block;
-      background: rgba(102, 126, 234, 0.1);
-      color: #667eea;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 16px;
-    }
-  </style>
+        /* Download Platform Buttons */
+        .platform-grid {
+            display: flex;
+            gap: 16px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+        .platform-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid rgba(255, 0, 0, 0.15);
+            padding: 14px 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: #fff;
+        }
+        .platform-card:hover {
+            border-color: #ff0000;
+            background: rgba(255, 0, 0, 0.08);
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.15);
+        }
+        .platform-card.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .platform-icon-lg { font-size: 24px; }
+        .platform-label { font-size: 9px; text-transform: uppercase; letter-spacing: 2px; color: #666; font-weight: 700; }
+        .platform-name { font-size: 14px; font-weight: 800; }
+    </style>
 </head>
 <body>
-  <!-- Particles Background -->
-  <div class="particles" id="particles"></div>
-
-  <!-- Navigation -->
-  <nav>
-    <div class="logo">IQON</div>
-    <div class="nav-links">
-      <a href="#features">Features</a>
-      <a href="#download">Download</a>
-      <a href="#about">About</a>
-      <a href="#download" class="download-nav-btn">Get IQON</a>
+    <div id="bg-canvas">
+        <div class="trigger" id="gridContainer"></div>
     </div>
-  </nav>
-
-  <!-- Hero Section -->
-  <section class="hero">
-    <div class="hero-content">
-      <div class="hero-text">
-        <div class="version-badge">v3.2.0 Available Now</div>
-        <h1>Monitor Your PC Like Never Before</h1>
-        <p>IQON gives you real-time insights into your computer's performance with a beautiful, easy-to-use interface. Smart cleanup, detailed stats, and intelligent optimization - all in one place.</p>
-        
-        <button class="download-btn" onclick="downloadApp()">
-          <span>⬇️</span>
-          Download for Windows
-        </button>
-        <div class="download-info">Free • Windows 10/11 & macOS • 45MB</div>
-      </div>
-
-      <div class="hero-visual">
-        <div class="app-mockup">
-          <div class="mockup-stats">
-            <div class="stat-item">
-              <div class="stat-row">
-                <span>CPU Usage</span>
-                <span>45%</span>
-              </div>
-              <div class="stat-bar">
-                <div class="stat-fill"></div>
-              </div>
+    <div class="relative z-10">
+        <!-- Navigation -->
+        <nav class="p-8 flex justify-between items-center max-w-7xl mx-auto fade-in">
+            <div class="flex items-center space-x-4">
+                <div class="w-10 h-10 border-2 border-red-600 flex items-center justify-center bg-black shadow-[0_0_15px_rgba(255,0,0,0.4)]">
+                    <span class="font-black text-red-600 text-lg">IQ</span>
+                </div>
+                <span class="text-3xl font-black tracking-tighter italic">IQON</span>
             </div>
-            
-            <div class="stat-item" style="margin-top: 24px;">
-              <div class="stat-row">
-                <span>RAM Usage</span>
-                <span>58%</span>
-              </div>
-              <div class="stat-bar">
-                <div class="stat-fill" style="animation-delay: 0.5s;"></div>
-              </div>
+            <div>
+                <a href="#download" class="bg-white text-black px-8 py-3 font-black text-[10px] uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all duration-300">Get IQON</a>
             </div>
-            
-            <div class="stat-item" style="margin-top: 24px;">
-              <div class="stat-row">
-                <span>Storage</span>
-                <span>245 GB Used</span>
-              </div>
-              <div class="stat-bar">
-                <div class="stat-fill" style="animation-delay: 1s;"></div>
-              </div>
+        </nav>
+        <main class="max-w-7xl mx-auto px-6 pt-12">
+            <!-- Hero Section -->
+            <div class="grid lg:grid-cols-2 gap-20 items-center min-h-[80vh]">
+                <div class="space-y-8">
+                    <div class="flex items-center gap-4 fade-in">
+                        <div class="w-2 h-2 rounded-full bg-red-600 animate-pulse"></div>
+                        <div class="text-[10px] font-bold text-red-500 uppercase tracking-[0.4em]">
+                            System Status: Optimized
+                        </div>
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-black leading-tight uppercase italic fade-in">
+                        NEXT LEVEL <br>
+                        <span class="red-glow-text text-red-600 text-5xl md:text-6xl block mt-1">MONITORING</span><br>
+                        FOR YOUR RIG
+                    </h1>
+                    <p class="text-gray-400 text-lg max-w-lg leading-relaxed fade-in">
+                        Ultra-low latency telemetry. Monitor every clock cycle, thermal junction, and fan curve with surgical precision.
+                    </p>
+                    <div class="flex flex-wrap gap-8 fade-in">
+                        <button class="cta-button px-10 py-5 text-white text-xs flex items-center gap-3" onclick="downloadApp()">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                            Download IQON
+                        </button>
+                    </div>
+                    <div class="text-[10px] text-zinc-600 uppercase tracking-widest font-bold fade-in">Free &bull; Windows 10/11 &amp; macOS &bull; 45MB</div>
+                </div>
+                <!-- Interface Mockup -->
+                <div class="relative fade-in">
+                    <div class="glass-panel p-1">
+                        <div class="bg-black p-4 border-b border-zinc-800 flex justify-between items-center">
+                            <div class="flex gap-2">
+                                <div class="w-2 h-2 bg-red-600"></div>
+                                <div class="w-2 h-2 bg-zinc-800"></div>
+                            </div>
+                            <div class="text-[8px] text-zinc-500 uppercase tracking-[0.3em] font-black">Kernel Telemetry</div>
+                        </div>
+                        <div class="p-8 space-y-6 bg-black/60">
+                            <div class="grid grid-cols-2 gap-6">
+                                <div class="space-y-1">
+                                    <div class="text-[9px] text-zinc-500 uppercase font-bold">GPU Load</div>
+                                    <div class="text-3xl font-black text-red-600 italic">98<span class="text-sm">%</span></div>
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="text-[9px] text-zinc-500 uppercase font-bold">Fan RPM</div>
+                                    <div class="text-3xl font-black text-red-600 italic">2400</div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="space-y-1">
+                                    <div class="text-[9px] text-zinc-500 uppercase font-bold">CPU</div>
+                                    <div class="text-xl font-black text-white italic">45<span class="text-xs text-zinc-500">%</span></div>
+                                    <div class="h-1 bg-zinc-900"><div class="h-full bg-red-600 w-[45%]"></div></div>
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="text-[9px] text-zinc-500 uppercase font-bold">RAM</div>
+                                    <div class="text-xl font-black text-white italic">68<span class="text-xs text-zinc-500">%</span></div>
+                                    <div class="h-1 bg-zinc-900"><div class="h-full bg-red-600 w-[68%]"></div></div>
+                                </div>
+                                <div class="space-y-1">
+                                    <div class="text-[9px] text-zinc-500 uppercase font-bold">FPS</div>
+                                    <div class="text-xl font-black text-white italic">144</div>
+                                    <div class="h-1 bg-zinc-900"><div class="h-full bg-red-600 w-[85%]"></div></div>
+                                </div>
+                            </div>
+                            <div class="h-1 w-full bg-zinc-900">
+                                <div class="h-full bg-red-600 w-[98%] shadow-[0_0_15px_#ff0000]"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
-      </div>
+            <!-- Ticker -->
+            <div class="ticker-wrap my-24">
+                <div class="ticker py-4 text-[10px] uppercase tracking-[0.5em] font-black text-white/80">
+                    GPU_TEMP_64C // FAN_SPEED_100% // NVME_HEALTH_GOOD // VRAM_USED_11.2GB // CPU_POWER_125W // AMBIENT_22C // FPS_144 // WIFI_SIGNAL_98% //
+                    GPU_TEMP_64C // FAN_SPEED_100% // NVME_HEALTH_GOOD // VRAM_USED_11.2GB // CPU_POWER_125W // AMBIENT_22C // FPS_144 // WIFI_SIGNAL_98% //
+                </div>
+            </div>
+
+            <!-- Features Section -->
+            <section class="py-20 fade-in">
+                <div class="flex flex-col items-center mb-16">
+                    <h2 class="text-[10px] uppercase tracking-[1em] text-red-600 font-black mb-3">Features</h2>
+                    <p class="text-zinc-500 text-sm">Built for enthusiasts who demand precision</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="glass-panel p-8 hover:border-red-600 transition-all duration-300">
+                        <div class="text-2xl mb-4">⚡</div>
+                        <h3 class="text-sm font-black uppercase tracking-wider mb-3">Real-Time Monitoring</h3>
+                        <p class="text-zinc-500 text-xs leading-relaxed">CPU, RAM, GPU, and storage with live circular gauges and FPS tracking per application.</p>
+                    </div>
+                    <div class="glass-panel p-8 hover:border-red-600 transition-all duration-300">
+                        <div class="text-2xl mb-4">🧹</div>
+                        <h3 class="text-sm font-black uppercase tracking-wider mb-3">Smart Cleanup</h3>
+                        <p class="text-zinc-500 text-xs leading-relaxed">Detect and remove junk files, temp data, and duplicates. Free up valuable disk space instantly.</p>
+                    </div>
+                    <div class="glass-panel p-8 hover:border-red-600 transition-all duration-300">
+                        <div class="text-2xl mb-4">📶</div>
+                        <h3 class="text-sm font-black uppercase tracking-wider mb-3">Network Diagnostics</h3>
+                        <p class="text-zinc-500 text-xs leading-relaxed">WiFi signal strength bars, live speed gauges, and full speed test suite built in.</p>
+                    </div>
+                    <div class="glass-panel p-8 hover:border-red-600 transition-all duration-300">
+                        <div class="text-2xl mb-4">🎮</div>
+                        <h3 class="text-sm font-black uppercase tracking-wider mb-3">Auto Optimization</h3>
+                        <p class="text-zinc-500 text-xs leading-relaxed">Intelligent system optimization that adapts to gaming, creative, or general workloads.</p>
+                    </div>
+                    <div class="glass-panel p-8 hover:border-red-600 transition-all duration-300">
+                        <div class="text-2xl mb-4">📊</div>
+                        <h3 class="text-sm font-black uppercase tracking-wider mb-3">FPS Monitor</h3>
+                        <p class="text-zinc-500 text-xs leading-relaxed">Smooth animated FPS line chart with per-app toggles. See your frame rates at a glance.</p>
+                    </div>
+                    <div class="glass-panel p-8 hover:border-red-600 transition-all duration-300">
+                        <div class="text-2xl mb-4">💻</div>
+                        <h3 class="text-sm font-black uppercase tracking-wider mb-3">Hardware Details</h3>
+                        <p class="text-zinc-500 text-xs leading-relaxed">CPU specs, RAM model, motherboard info, and GPU details all in one unified dashboard.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Hardware Support -->
+            <section class="py-20 fade-in">
+                <div class="flex flex-col items-center mb-16">
+                    <h2 class="text-[10px] uppercase tracking-[1em] text-red-600 font-black mb-3">Hardware Compatibility</h2>
+                    <p class="text-zinc-500 text-sm">Real-time support for the latest architecture</p>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Intel -->
+                    <details class="group">
+                        <summary class="cursor-pointer">
+                            <div class="hardware-card glass-panel p-8 flex justify-between items-center">
+                                <span class="text-xl font-black italic uppercase text-white">Intel</span>
+                                <span class="text-red-600 group-open:rotate-180 transition-transform">+</span>
+                            </div>
+                        </summary>
+                        <div class="p-6 bg-zinc-950 border-x border-b border-red-600/30 text-[10px] leading-relaxed text-zinc-400 uppercase font-bold tracking-wider space-y-2">
+                            <p>Core Ultra Series 2 (200V/200S)</p>
+                            <p>14th Gen Raptor Lake Refresh</p>
+                            <p>13th & 12th Gen Core i9/i7/i5</p>
+                            <p>Intel Xeon Scalable Nodes</p>
+                        </div>
+                    </details>
+                    <!-- AMD -->
+                    <details class="group">
+                        <summary class="cursor-pointer">
+                            <div class="hardware-card glass-panel p-8 flex justify-between items-center">
+                                <span class="text-xl font-black italic uppercase text-red-600">AMD</span>
+                                <span class="text-red-600 group-open:rotate-180 transition-transform">+</span>
+                            </div>
+                        </summary>
+                        <div class="p-6 bg-zinc-950 border-x border-b border-red-600/30 text-[10px] leading-relaxed text-zinc-400 uppercase font-bold tracking-wider space-y-2">
+                            <p>Ryzen 9000 Series (Zen 5)</p>
+                            <p>Ryzen 7000 & 8000 Series</p>
+                            <p>Ryzen 5000 / 5000X3D</p>
+                            <p>Threadripper 7000 PRO</p>
+                        </div>
+                    </details>
+                    <!-- GPU -->
+                    <details class="group">
+                        <summary class="cursor-pointer">
+                            <div class="hardware-card glass-panel p-8 flex justify-between items-center">
+                                <span class="text-xl font-black italic uppercase text-white">Graphics</span>
+                                <span class="text-red-600 group-open:rotate-180 transition-transform">+</span>
+                            </div>
+                        </summary>
+                        <div class="p-6 bg-zinc-950 border-x border-b border-red-600/30 text-[10px] leading-relaxed text-zinc-400 uppercase font-bold tracking-wider space-y-2">
+                            <p>NVIDIA RTX 50 & 40 Series</p>
+                            <p>AMD Radeon RX 7000 / 6000</p>
+                            <p>Fan Speed & PWM Control</p>
+                            <p>AIO Pump RPM Telemetry</p>
+                        </div>
+                    </details>
+                    <!-- Storage -->
+                    <details class="group">
+                        <summary class="cursor-pointer">
+                            <div class="hardware-card glass-panel p-8 flex justify-between items-center">
+                                <span class="text-xl font-black italic uppercase text-white">Storage</span>
+                                <span class="text-red-600 group-open:rotate-180 transition-transform">+</span>
+                            </div>
+                        </summary>
+                        <div class="p-6 bg-zinc-950 border-x border-b border-red-600/30 text-[10px] leading-relaxed text-zinc-400 uppercase font-bold tracking-wider space-y-2">
+                            <p>NVMe Gen 5 / Gen 4 Health</p>
+                            <p>S.M.A.R.T. Diagnostic Data</p>
+                            <p>Total Bytes Written (TBW)</p>
+                            <p>Drive Thermal Throttle Status</p>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
+            <!-- Download Section -->
+            <section class="py-20 mb-20 fade-in" id="download">
+                <div class="flex flex-col items-center mb-12">
+                    <h2 class="text-[10px] uppercase tracking-[1em] text-red-600 font-black mb-3">Download</h2>
+                    <p class="text-zinc-500 text-sm mb-8">Choose your platform</p>
+
+                    <button class="cta-button px-12 py-5 text-white text-xs flex items-center gap-3 mb-8" onclick="downloadApp()">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                        Download IQON v3.3.0
+                    </button>
+                </div>
+
+                <div class="flex justify-center">
+                    <div class="platform-grid">
+                        <a class="platform-card" onclick="downloadApp(); return false;">
+                            <span class="platform-icon-lg">🪟</span>
+                            <div>
+                                <div class="platform-label">Download for</div>
+                                <div class="platform-name">Windows 10/11</div>
+                            </div>
+                        </a>
+                        <a class="platform-card" onclick="downloadMac(); return false;">
+                            <span class="platform-icon-lg">🍎</span>
+                            <div>
+                                <div class="platform-label">Download for</div>
+                                <div class="platform-name">macOS</div>
+                            </div>
+                        </a>
+                        <div class="platform-card disabled">
+                            <span class="platform-icon-lg">🐧</span>
+                            <div>
+                                <div class="platform-label">Coming Soon</div>
+                                <div class="platform-name">Linux</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        <footer class="border-t border-zinc-900 py-20 bg-black">
+            <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-10">
+                <div class="space-y-6">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 border-2 border-red-600 flex items-center justify-center">
+                            <span class="font-black text-red-600 text-sm">IQ</span>
+                        </div>
+                        <span class="text-xl font-black italic">IQON</span>
+                    </div>
+                    <p class="text-zinc-600 text-xs leading-relaxed max-w-sm">
+                        Clinical grade system analytics for enthusiasts. Made with precision for PC builders and gamers.
+                    </p>
+                </div>
+                <div class="flex justify-end items-center space-x-10 text-[9px] text-zinc-700 uppercase font-black tracking-[0.2em]">
+                    <a href="#" class="hover:text-red-600 transition">Terms</a>
+                    <a href="#" class="hover:text-red-600 transition">Privacy</a>
+                    <span>&copy; 2025 IQON</span>
+                </div>
+            </div>
+        </footer>
     </div>
-  </section>
-
-  <!-- Features Section -->
-  <section class="features" id="features">
-    <h2>Powerful Features</h2>
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">⚡</div>
-        <h3>Real-Time Monitoring</h3>
-        <p>Track CPU, RAM, GPU, and storage usage in real-time with beautiful circular progress indicators and live graphs.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">🧹</div>
-        <h3>Smart Cleanup</h3>
-        <p>Automatically detect and remove junk files, temporary data, and duplicates to free up valuable disk space.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">🌐</div>
-        <h3>Network Insights</h3>
-        <p>Monitor your internet connection with live download/upload speeds and run comprehensive speed tests.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">💾</div>
-        <h3>Storage Manager</h3>
-        <p>Browse folders, view file sizes, and delete unwanted files directly from the app with real-time updates.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">🎮</div>
-        <h3>Auto Optimization</h3>
-        <p>Intelligent system optimization that adapts to your usage - gaming, creative work, or general use.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">🔔</div>
-        <h3>Smart Notifications</h3>
-        <p>Get notified about low storage, high CPU usage, or available updates - customize what alerts you want.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">💻</div>
-        <h3>Hardware Details</h3>
-        <p>View detailed CPU specifications, RAM model, motherboard info, and GPU details all in one place.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">📊</div>
-        <h3>Process Manager</h3>
-        <p>See which apps are using the most RAM and CPU with a clean, easy-to-read breakdown.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">🎨</div>
-        <h3>Beautiful Interface</h3>
-        <p>Dark theme with smooth animations, vibrant colors, and a modern design that's easy on the eyes.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Download Section -->
-  <section class="download-section" id="download">
-    <h2>Ready to Get Started?</h2>
-    <p>Download IQON now and take control of your PC's performance</p>
-    
-    <button class="download-btn" onclick="downloadApp()">
-      <span>⬇️</span>
-      Download IQON v3.2.0
-    </button>
-
-    <div class="platform-buttons">
-      <a class="platform-btn" onclick="downloadApp(); return false;">
-        <span class="platform-icon">🪟</span>
-        <div>
-          <div style="font-size: 12px; color: #888;">Download for</div>
-          <div>Windows 10/11</div>
-        </div>
-      </a>
-      
-      <a class="platform-btn" onclick="downloadMac(); return false;">
-        <span class="platform-icon">🍎</span>
-        <div>
-          <div style="font-size: 12px; color: #888;">Download for</div>
-          <div>macOS</div>
-        </div>
-      </a>
-      
-      <div class="platform-btn" style="opacity: 0.5; cursor: not-allowed;">
-        <span class="platform-icon">🐧</span>
-        <div>
-          <div style="font-size: 12px; color: #888;">Coming Soon</div>
-          <div>Linux</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer id="about">
-    <p>&copy; 2025 IQON PC Monitor. All rights reserved.</p>
-    <p>Made with ❤️ for PC enthusiasts</p>
-    <p><a href="#features">Features</a> • <a href="#download">Download</a> • <a href="mailto:support@iqon.app">Support</a></p>
-  </footer>
-
-  <script>
-    // Create particles
-    function createParticles() {
-      const particles = document.getElementById('particles');
-      for (let i = 0; i < 30; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        particle.style.left = Math.random() * 100 + '%';
-        particle.style.animationDelay = Math.random() * 10 + 's';
-        particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
-        particles.appendChild(particle);
-      }
-    }
-    createParticles();
-
-    // Download function - triggers direct .exe download
-    function downloadApp() {
-      const downloadUrl = 'https://github.com/LeksoG/pc-monitor/releases/latest/download/IQON.PC.Monitor.Setup.3.2.0.exe';
-
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = 'IQON PC Monitor Setup 3.2.0.exe';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    // Download function for macOS
-    function downloadMac() {
-      const downloadUrl = 'https://github.com/LeksoG/pc-monitor/releases/latest/download/IQON.PC.Monitor-3.2.0.dmg';
-
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = 'IQON PC Monitor 3.2.0.dmg';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    // Smooth scroll for navigation
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+        // Generate Grid
+        const gridContainer = document.getElementById('gridContainer');
+        const boxCount = 350;
+        const boxes = [];
+        for (let i = 0; i < boxCount; i++) {
+            const box = document.createElement('div');
+            box.className = 'box';
+            gridContainer.appendChild(box);
+            boxes.push(box);
         }
-      });
-    });
-  </script>
+        // Entrance Animations
+        gsap.to(".fade-in", {
+            opacity: 1,
+            y: 0,
+            duration: 1,
+            stagger: 0.1,
+            ease: "power3.out"
+        });
+        // Background Wave Animation (Vertical Motion)
+        let ticker = 0;
+        function animateBackground() {
+            ticker += 0.03;
+            boxes.forEach((box, i) => {
+                const row = Math.floor(i / 15);
+                const col = i % 15;
+                const wave = Math.sin(ticker + (row * 0.3) + (col * 0.1)) * 10;
+                const isEven = i % 2 === 0;
+                const baseShift = isEven ? 0 : 35;
+                gsap.set(box, { y: baseShift + wave });
+            });
+            requestAnimationFrame(animateBackground);
+        }
+        animateBackground();
+        // Scroll Reaction (Rise and Glow)
+        boxes.forEach((box) => {
+            gsap.timeline({
+                scrollTrigger: {
+                    trigger: box,
+                    start: "top 90%",
+                    end: "top 10%",
+                    scrub: 1
+                }
+            })
+            .to(box, {
+                z: 80,
+                backgroundColor: "rgba(255, 0, 0, 0.15)",
+                borderColor: "rgba(255, 0, 0, 0.4)",
+                duration: 0.5
+            })
+            .to(box, {
+                z: 0,
+                backgroundColor: "#0a0a0a",
+                borderColor: "rgba(255, 0, 0, 0.03)",
+                duration: 0.5
+            });
+        });
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // Download functions
+        function downloadApp() {
+            const downloadUrl = 'https://github.com/LeksoG/pc-monitor/releases/latest/download/IQON.PC.Monitor.Setup.3.3.0.exe';
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = 'IQON PC Monitor Setup 3.3.0.exe';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function downloadMac() {
+            const downloadUrl = 'https://github.com/LeksoG/pc-monitor/releases/latest/download/IQON.PC.Monitor-3.3.0.dmg';
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = 'IQON PC Monitor 3.3.0.dmg';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
 </body>
 </html>
