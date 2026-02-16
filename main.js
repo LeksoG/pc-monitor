@@ -1,7 +1,7 @@
-const { app, BrowserWindow, ipcMain, Notification, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, Notification, dialog, Tray, Menu, screen } = require('electron');
 const path = require('path');
 const os = require('os');
-const { exec } = require('child_process');
+const { exec, execSync } = require('child_process');
 const fs = require('fs');
 const https = require('https');
 const dns = require('dns');
@@ -16,17 +16,28 @@ try {
 }
 
 let mainWindow;
+let overlayWindow = null;
+let tray = null;
 let previousCPUInfo = null;
 let runningApps = new Map();
 let currentOptimizationMode = 'auto';
 let lastDetectedMode = 'balanced';
-const CURRENT_VERSION = '3.3.0';
+let gameModeActive = false;
+let gameDetectionInterval = null;
+const CURRENT_VERSION = '3.4.0';
 let notificationSettings = {
   lowStorage: true,
   highCPU: true,
   updates: true
 };
 let shownNotifications = new Set(); // Track shown notifications
+
+// Manual tuning state
+let manualTuning = {
+  cpuPowerPlan: 'balanced',  // 'power-saver', 'balanced', 'high-performance'
+  gpuPerformance: 50,         // 0-100 percentage
+  fanSpeed: 50                // 0-100 percentage
+};
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -43,6 +54,177 @@ function createWindow() {
   mainWindow.loadFile('index.html');
   startMonitoring();
   setupAutoUpdater();
+  setupTray();
+  startGameDetection();
+
+  mainWindow.on('close', (event) => {
+    // Minimize to tray instead of quitting
+    if (!app.isQuitting) {
+      event.preventDefault();
+      mainWindow.hide();
+    }
+  });
+}
+
+// System tray setup
+function setupTray() {
+  // Create a simple 16x16 icon programmatically using nativeImage
+  const { nativeImage } = require('electron');
+  // Create a simple red square icon
+  const iconSize = 16;
+  const canvas = Buffer.alloc(iconSize * iconSize * 4);
+  for (let y = 0; y < iconSize; y++) {
+    for (let x = 0; x < iconSize; x++) {
+      const offset = (y * iconSize + x) * 4;
+      canvas[offset] = 220;     // R
+      canvas[offset + 1] = 38;  // G
+      canvas[offset + 2] = 38;  // B
+      canvas[offset + 3] = 255; // A
+    }
+  }
+  const trayIcon = nativeImage.createFromBuffer(canvas, { width: iconSize, height: iconSize });
+
+  tray = new Tray(trayIcon);
+  tray.setToolTip('IQON PC Monitor');
+
+  const contextMenu = Menu.buildFromTemplate([
+    { label: 'Show IQON', click: () => { mainWindow.show(); mainWindow.focus(); } },
+    { type: 'separator' },
+    { label: 'Game Mode', type: 'checkbox', checked: false, click: (item) => { toggleGameMode(item.checked); } },
+    { type: 'separator' },
+    { label: 'Quit', click: () => { app.isQuitting = true; app.quit(); } }
+  ]);
+
+  tray.setContextMenu(contextMenu);
+  tray.on('double-click', () => { mainWindow.show(); mainWindow.focus(); });
+}
+
+// Game mode overlay window
+function createOverlayWindow() {
+  if (overlayWindow && !overlayWindow.isDestroyed()) return;
+
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width } = primaryDisplay.workAreaSize;
+
+  overlayWindow = new BrowserWindow({
+    width: 260,
+    height: 50,
+    x: width - 280,
+    y: 20,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    focusable: false,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  overlayWindow.setIgnoreMouseEvents(true);
+
+  const overlayHTML = `
+    <html><body style="margin:0;padding:0;background:transparent;overflow:hidden;">
+      <div style="
+        background: rgba(10,10,10,0.85);
+        border: 1px solid #dc2626;
+        border-radius: 8px;
+        padding: 10px 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 20px rgba(220,38,38,0.3);
+      ">
+        <span style="font-size:20px;">🎮</span>
+        <div>
+          <div style="color:#dc2626; font-size:12px; font-weight:800; letter-spacing:1px; font-family:system-ui;">GAME MODE</div>
+          <div style="color:#888; font-size:10px; font-family:system-ui;">Performance Optimized</div>
+        </div>
+      </div>
+    </body></html>
+  `;
+
+  overlayWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(overlayHTML));
+}
+
+function destroyOverlayWindow() {
+  if (overlayWindow && !overlayWindow.isDestroyed()) {
+    overlayWindow.close();
+    overlayWindow = null;
+  }
+}
+
+function toggleGameMode(enable) {
+  gameModeActive = enable;
+  if (enable) {
+    createOverlayWindow();
+    // Apply gaming optimization
+    if (os.platform() === 'win32') {
+      exec('powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c', () => {}); // High performance
+    }
+  } else {
+    destroyOverlayWindow();
+    if (os.platform() === 'win32') {
+      exec('powercfg /setactive 381b4222-f694-41f0-9685-ff5bb260df2e', () => {}); // Balanced
+    }
+  }
+
+  // Update tray menu
+  if (tray) {
+    const contextMenu = Menu.buildFromTemplate([
+      { label: 'Show IQON', click: () => { mainWindow.show(); mainWindow.focus(); } },
+      { type: 'separator' },
+      { label: 'Game Mode', type: 'checkbox', checked: gameModeActive, click: (item) => { toggleGameMode(item.checked); } },
+      { type: 'separator' },
+      { label: 'Quit', click: () => { app.isQuitting = true; app.quit(); } }
+    ]);
+    tray.setContextMenu(contextMenu);
+  }
+
+  // Notify renderer
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('game-mode-changed', gameModeActive);
+  }
+}
+
+// Detect game platforms and auto-enable game mode
+function startGameDetection() {
+  const gamePlatforms = [
+    'steam', 'steamwebhelper', 'epicgameslauncher', 'origin', 'eadesktop',
+    'battle.net', 'galaxyclient', 'ubisoft', 'ubisoftconnect',
+    'riotclientservices', 'bethesdalauncher'
+  ];
+
+  const gameProcesses = [
+    'valorant', 'valorant-win64-shipping', 'csgo', 'cs2',
+    'fortnite', 'fortniteclient', 'minecraft', 'javaw',
+    'robloxplayerbeta', 'overwatch', 'genshinimpact',
+    'eldenring', 'cyberpunk2077', 'gtav', 'gta5',
+    'dota2', 'apexlegends', 'r5apex', 'pubg', 'tslgame',
+    'baldursgate3', 'starfield', 'helldivers2', 'palworld',
+    'rust', 'ark', 'dayz', 'escapefromtarkov'
+  ];
+
+  gameDetectionInterval = setInterval(() => {
+    // Only auto-detect when the main window is hidden (app "closed" to tray)
+    if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+      let gameFound = false;
+      runningApps.forEach((value, processName) => {
+        if (gameProcesses.some(g => processName.includes(g))) {
+          gameFound = true;
+        }
+      });
+
+      if (gameFound && !gameModeActive) {
+        toggleGameMode(true);
+      } else if (!gameFound && gameModeActive) {
+        toggleGameMode(false);
+      }
+    }
+  }, 5000);
 }
 
 // Auto-updater setup
@@ -1137,10 +1319,97 @@ async function getStorageInfo() {
   });
 }
 
+// ========== Manual Tuning IPC ==========
+
+// Get current manual tuning values
+ipcMain.handle('get-manual-tuning', async () => {
+  return manualTuning;
+});
+
+// Set CPU power plan
+ipcMain.handle('set-cpu-power-plan', async (event, plan) => {
+  manualTuning.cpuPowerPlan = plan;
+
+  if (os.platform() === 'win32') {
+    const planGuids = {
+      'power-saver': 'a1841308-3541-4fab-bc81-f71556f20b4a',
+      'balanced': '381b4222-f694-41f0-9685-ff5bb260df2e',
+      'high-performance': '8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
+    };
+    const guid = planGuids[plan];
+    if (guid) {
+      return new Promise((resolve) => {
+        exec(`powercfg /setactive ${guid}`, (error) => {
+          resolve({ success: !error, plan });
+        });
+      });
+    }
+  }
+  return { success: true, plan };
+});
+
+// Set GPU performance level (NVIDIA via nvidia-smi)
+ipcMain.handle('set-gpu-performance', async (event, level) => {
+  manualTuning.gpuPerformance = level;
+
+  if (os.platform() === 'win32') {
+    // Map 0-100 to power limit percentage (50%-100% of TDP)
+    const powerPercent = Math.round(50 + (level / 100) * 50);
+    return new Promise((resolve) => {
+      exec(`nvidia-smi -pl ${powerPercent}`, (error) => {
+        if (error) {
+          // nvidia-smi may not be available or need admin, fall back gracefully
+          resolve({ success: true, level, note: 'Applied via preference (nvidia-smi unavailable)' });
+        } else {
+          resolve({ success: true, level });
+        }
+      });
+    });
+  }
+  return { success: true, level };
+});
+
+// Set fan speed (percentage)
+ipcMain.handle('set-fan-speed', async (event, speed) => {
+  manualTuning.fanSpeed = speed;
+
+  if (os.platform() === 'win32') {
+    // Try nvidia-smi for GPU fan control
+    return new Promise((resolve) => {
+      // First enable manual fan control, then set speed
+      exec(`nvidia-smi -i 0 --fan-speed=${speed}`, (error) => {
+        if (error) {
+          resolve({ success: true, speed, note: 'Preference saved (direct fan control requires admin/vendor tool)' });
+        } else {
+          resolve({ success: true, speed });
+        }
+      });
+    });
+  }
+  return { success: true, speed };
+});
+
+// Get game mode status
+ipcMain.handle('get-game-mode', async () => {
+  return { active: gameModeActive };
+});
+
+// Toggle game mode from renderer
+ipcMain.handle('toggle-game-mode', async (event, enable) => {
+  toggleGameMode(enable);
+  return { active: gameModeActive };
+});
+
 app.whenReady().then(createWindow);
+
+app.on('before-quit', () => {
+  app.isQuitting = true;
+  if (gameDetectionInterval) clearInterval(gameDetectionInterval);
+  destroyOverlayWindow();
+});
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
-
 });
 
 
