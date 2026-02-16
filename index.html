@@ -1673,13 +1673,24 @@
 </head>
 <body>
   <!-- Auto-Update Banner -->
-  <div id="updateBanner" style="display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:99999; background:#141414; border:1px solid #dc2626; border-radius:12px; padding:16px 24px; box-shadow:0 8px 32px rgba(220,38,38,0.3); display:none; align-items:center; gap:16px;">
-    <div>
-      <div style="font-size:14px; font-weight:600;" id="updateBannerTitle">Update Available</div>
-      <div style="font-size:12px; color:#888;" id="updateBannerText">A new version is downloading...</div>
+  <div id="updateBanner" style="display:none; position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:99999; background:#141414; border:1px solid #dc2626; border-radius:12px; padding:16px 24px; box-shadow:0 8px 32px rgba(220,38,38,0.3); align-items:center; gap:16px; min-width:380px;">
+    <div style="display:flex; align-items:center; gap:16px; margin-bottom:8px;">
+      <div style="flex:1;">
+        <div style="font-size:14px; font-weight:600;" id="updateBannerTitle">Update Available</div>
+        <div style="font-size:12px; color:#888;" id="updateBannerText">A new version is downloading...</div>
+      </div>
+      <button onclick="installUpdate()" id="updateBannerBtn" style="display:none; padding:8px 20px; background:#dc2626; border:none; border-radius:6px; color:#fff; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;">Restart & Update</button>
+      <button onclick="dismissUpdateBanner()" style="background:none; border:none; color:#555; cursor:pointer; font-size:18px; padding:0 4px;">&times;</button>
     </div>
-    <button onclick="installUpdate()" id="updateBannerBtn" style="display:none; padding:8px 20px; background:#dc2626; border:none; border-radius:6px; color:#fff; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;">Restart & Update</button>
-    <button onclick="dismissUpdateBanner()" style="background:none; border:none; color:#555; cursor:pointer; font-size:18px; padding:0 4px;">&times;</button>
+    <div id="updateProgressContainer" style="display:none;">
+      <div style="height:6px; background:#1a1a1a; border-radius:3px; overflow:hidden; margin-bottom:6px;">
+        <div id="updateProgressBar" style="height:100%; background:linear-gradient(90deg, #dc2626 0%, #f59e0b 100%); border-radius:3px; transition:width 0.3s ease; width:0%;"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:11px; color:#666;" id="updateProgressText">Downloading...</span>
+        <span style="font-size:11px; font-weight:700; color:#dc2626;" id="updateProgressPercent">0%</span>
+      </div>
+    </div>
   </div>
 
   <!-- Delete Progress Notification -->
@@ -2217,19 +2228,21 @@
   <div class="modal" id="whatsNewModal">
     <div class="modal-content">
       <div class="modal-header">
-        <div class="modal-title">🎉 What's New in v<span id="whatsNewVersion">3.4.0</span></div>
+        <div class="modal-title">🎉 What's New in v<span id="whatsNewVersion">3.5.0</span></div>
         <div class="modal-subtitle">Check out the latest features and improvements</div>
       </div>
 
       <div class="release-notes">
         <h4>New Features</h4>
         <ul id="whatsNewList">
-          <li>Game Mode overlay - auto-detects games and shows overlay</li>
-          <li>Manual Optimization - adjust CPU, GPU, and fan speed yourself</li>
-          <li>Smooth FPS chart animation with continuous scrolling</li>
-          <li>System tray support - app runs in background</li>
-          <li>Auto-update improvements - seamless background updates</li>
-          <li>Catmull-Rom spline curves for smoother chart lines</li>
+          <li>Creator Mode - auto-detects editing apps (Photoshop, Premiere, Blender, etc.)</li>
+          <li>IQON Graphics Enhancer - toggle in game overlay for max GPU performance</li>
+          <li>Bigger overlay with Open IQON button and auto-hide after 5 seconds</li>
+          <li>Smoother FPS chart with interpolated animations and no glitches</li>
+          <li>Recent Apps FPS tracker - see highest, average, and lowest FPS per app</li>
+          <li>Improved fan speed control with multi-method hardware support</li>
+          <li>Seamless auto-update with download progress bar and auto-restart</li>
+          <li>Dashboard redesign - status indicators moved to top bar</li>
         </ul>
       </div>
       
