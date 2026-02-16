@@ -1593,6 +1593,76 @@
       }
     }
 
+    /* Recent App FPS Card */
+    .recent-app-card {
+      background: #1a1a1a;
+      border: 1px solid #1f1f1f;
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+
+    .recent-app-card:hover {
+      border-color: #dc2626;
+      background: #1f1f1f;
+    }
+
+    .recent-app-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(220, 38, 38, 0.1);
+      border-radius: 8px;
+    }
+
+    .recent-app-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .recent-app-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+
+    .recent-app-fps-stats {
+      display: flex;
+      gap: 8px;
+      font-size: 10px;
+    }
+
+    .fps-stat {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .fps-stat-label {
+      color: #555;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .fps-stat-value {
+      font-weight: 700;
+    }
+
+    .fps-stat-value.high { color: #34d399; }
+    .fps-stat-value.avg { color: #f59e0b; }
+    .fps-stat-value.low { color: #ef4444; }
+
     /* Responsive */
     @media (max-width: 1400px) {
       .dashboard-grid {
@@ -1640,40 +1710,53 @@
   <div class="main-content" id="homePage">
     <div class="top-bar">
       <div class="page-title">Home</div>
-      <div class="user-info">
-        <div class="user-avatar" id="userAvatar">U</div>
-        <div class="user-name" id="userName">Loading...</div>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div class="quick-stats" style="display:flex; gap:12px;">
+          <div class="quick-stat" style="background:#141414; border:1px solid #1f1f1f; border-radius:20px; padding:6px 14px;">
+            <div class="quick-stat-icon" style="background: #34d399; width:6px; height:6px; border-radius:50;"></div>
+            <span class="quick-stat-label" style="font-size:11px;">Temps</span>
+            <span class="quick-stat-value" style="font-size:11px;">Normal</span>
+          </div>
+          <div class="quick-stat" style="background:#141414; border:1px solid #1f1f1f; border-radius:20px; padding:6px 14px;">
+            <div class="quick-stat-icon" style="background: #34d399; width:6px; height:6px; border-radius:50;"></div>
+            <span class="quick-stat-label" style="font-size:11px;">Health</span>
+            <span class="quick-stat-value" style="font-size:11px;">Good</span>
+          </div>
+          <div class="quick-stat" style="background:#141414; border:1px solid #1f1f1f; border-radius:20px; padding:6px 14px;">
+            <div class="quick-stat-icon" style="background: #34d399; width:6px; height:6px; border-radius:50;"></div>
+            <span class="quick-stat-label" style="font-size:11px;">Stability</span>
+            <span class="quick-stat-value" style="font-size:11px;">Stable</span>
+          </div>
+        </div>
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">U</div>
+          <div class="user-name" id="userName">Loading...</div>
+        </div>
       </div>
     </div>
 
-    <div class="welcome-section">
-      <div class="welcome-content">
-        <div class="welcome-text">Welcome back,</div>
-        <div class="welcome-name" id="welcomeName">User</div>
-        
-        <div class="quick-stats">
-          <div class="quick-stat">
-            <div class="quick-stat-icon" style="background: #34d399;"></div>
-            <span class="quick-stat-label">Temperatures</span>
-            <span class="quick-stat-value">Normal</span>
-          </div>
-          <div class="quick-stat">
-            <div class="quick-stat-icon" style="background: #34d399;"></div>
-            <span class="quick-stat-label">Health</span>
-            <span class="quick-stat-value">All Good</span>
-          </div>
-          <div class="quick-stat">
-            <div class="quick-stat-icon" style="background: #34d399;"></div>
-            <span class="quick-stat-label">Stability</span>
-            <span class="quick-stat-value">No recent crashes</span>
-          </div>
+    <!-- Recent Apps with FPS Stats -->
+    <div class="welcome-section" style="flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:16px;">
+        <div>
+          <div class="welcome-text">Welcome back,</div>
+          <div class="welcome-name" id="welcomeName">User</div>
+        </div>
+        <div class="motherboard-container">
+          <div class="motherboard-visual" onclick="show3DMotherboard()" title="Click to view in 3D" style="width:100px; height:75px;"></div>
+          <div class="motherboard-label">Motherboard</div>
+          <div class="motherboard-name" id="userMotherboard">Loading...</div>
         </div>
       </div>
-      
-      <div class="motherboard-container">
-        <div class="motherboard-visual" onclick="show3DMotherboard()" title="Click to view in 3D"></div>
-        <div class="motherboard-label">Motherboard</div>
-        <div class="motherboard-name" id="userMotherboard">Loading...</div>
+
+      <div style="width:100%;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+          <h3 style="font-size:14px; font-weight:600; color:#888; text-transform:uppercase; letter-spacing:1px;">Recent Apps - FPS Performance</h3>
+          <span class="activity-live">LIVE</span>
+        </div>
+        <div id="recentAppsFPS" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px;">
+          <div style="text-align:center; padding:20px; color:#555; font-size:13px; grid-column:1/-1;">Loading app performance data...</div>
+        </div>
       </div>
     </div>
 
