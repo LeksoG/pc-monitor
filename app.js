@@ -463,6 +463,7 @@ function updateFPSLegend() {
 function showPage(page) {
   document.getElementById('homePage').classList.add('hidden');
   document.getElementById('notificationsPage').classList.add('hidden');
+  document.getElementById('updatesPage').classList.add('hidden');
 
   document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
 
@@ -474,6 +475,10 @@ function showPage(page) {
     document.querySelectorAll('.nav-item')[1].classList.add('active');
     loadNotificationSettings();
     loadUsername();
+  } else if (page === 'updates') {
+    document.getElementById('updatesPage').classList.remove('hidden');
+    document.querySelectorAll('.nav-item')[2].classList.add('active');
+    renderUpdatesPage();
   }
 }
 
@@ -1158,96 +1163,81 @@ function formatSpeed(bytesPerSecond) {
 function setupUpdateListener() {
   if (window.api.onUpdateStatus) {
     window.api.onUpdateStatus((data) => {
-      const banner = document.getElementById('updateBanner');
-      const title = document.getElementById('updateBannerTitle');
-      const text = document.getElementById('updateBannerText');
-      const btn = document.getElementById('updateBannerBtn');
-      const progressContainer = document.getElementById('updateProgressContainer');
-      const progressBar = document.getElementById('updateProgressBar');
-      const progressText = document.getElementById('updateProgressText');
-      const progressPercent = document.getElementById('updateProgressPercent');
-
       if (data.status === 'available') {
-        banner.style.display = 'block';
-        title.textContent = 'Downloading Update';
-        text.textContent = `Version ${data.version} is downloading...`;
-        btn.style.display = 'none';
-        progressContainer.style.display = 'block';
-        // Show animated pulsing bar immediately so user sees activity
-        progressBar.classList.add('update-progress-animated');
-        progressPercent.textContent = '';
-        progressText.textContent = 'Downloading...';
         updateVersion = data.version;
+        showUpdateDot(true);
       } else if (data.status === 'downloading') {
-        // Real progress event received - switch from animated to real bar
-        const progress = data.progress || {};
-        const pct = progress.percent || 0;
-        banner.style.display = 'block';
-        title.textContent = 'Downloading Update';
-        btn.style.display = 'none';
-        progressContainer.style.display = 'block';
-        // Remove pulse animation, show real progress
-        progressBar.classList.remove('update-progress-animated');
-        progressBar.style.width = pct + '%';
-        progressPercent.textContent = pct + '%';
-
-        if (progress.total && progress.transferred) {
-          text.textContent = `v${updateVersion || 'update'} — ${formatBytes(progress.transferred)} / ${formatBytes(progress.total)}`;
-          progressText.textContent = formatSpeed(progress.bytesPerSecond || 0);
-        } else {
-          text.textContent = `Downloading v${updateVersion || 'new version'}...`;
-          progressText.textContent = pct + '% downloaded';
-        }
+        // Update is downloading in background, dot stays visible
+        updateVersion = data.version || updateVersion;
+        showUpdateDot(true);
       } else if (data.status === 'ready') {
-        banner.style.display = 'block';
-        title.textContent = 'Update Ready!';
-        text.textContent = `Version ${data.version} is ready to install`;
-        progressContainer.style.display = 'block';
-        progressBar.classList.remove('update-progress-animated');
-        progressBar.style.width = '100%';
-        progressPercent.textContent = '100%';
-        progressText.textContent = 'Restarting in 3 seconds...';
-        btn.style.display = 'inline-block';
         updateReady = true;
         updateVersion = data.version;
+        showUpdateDot(true);
 
         localStorage.setItem('justUpdated', 'true');
         localStorage.setItem('installedVersion', data.version);
-
-        // Auto-restart after 3 seconds
-        let countdown = 3;
-        const countdownInterval = setInterval(() => {
-          countdown--;
-          if (countdown > 0) {
-            progressText.textContent = `Restarting in ${countdown} seconds...`;
-          } else {
-            clearInterval(countdownInterval);
-            progressText.textContent = 'Restarting now...';
-            if (window.api.installUpdateNow) {
-              window.api.installUpdateNow();
-            }
-          }
-        }, 1000);
       } else if (data.status === 'up-to-date') {
-        // Don't show anything if up to date
+        showUpdateDot(false);
       } else if (data.status === 'error') {
         console.log('Update check error:', data.error);
+      }
+
+      // Re-render updates page if it's currently visible
+      if (!document.getElementById('updatesPage').classList.contains('hidden')) {
+        renderUpdatesPage();
       }
     });
   }
 }
 
+function showUpdateDot(visible) {
+  const dot = document.getElementById('updateDot');
+  if (dot) dot.style.display = visible ? 'block' : 'none';
+}
+
+function renderUpdatesPage() {
+  const container = document.getElementById('updatesContent');
+  const currentVer = '3.5.0';
+
+  if (updateVersion) {
+    // There's an update available
+    showUpdateDot(false); // Clear dot when user views the page
+    container.innerHTML = `
+      <div class="updates-glass-panel">
+        <div class="update-tag">New Release Available</div>
+        <h2 class="update-heading">
+          UPGRADE TO<br>
+          <span class="highlight">VERSION ${updateVersion}</span>
+        </h2>
+        <div class="update-version-badge">v${currentVer} → v${updateVersion}</div>
+        <p class="update-description">
+          A new version of IQON is available. Download and install the latest version to experience new features, improvements, and bug fixes.
+        </p>
+        <a class="updates-download-btn" href="https://github.com/LeksoG/pc-monitor/releases/latest" target="_blank">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          Download Latest Version
+        </a>
+      </div>
+    `;
+  } else {
+    // Up to date
+    container.innerHTML = `
+      <div class="updates-no-update">
+        <div class="check-icon">✓</div>
+        <div class="status-text">You're up to date</div>
+        <div class="sub-text">IQON v${currentVer} is the latest version</div>
+      </div>
+    `;
+  }
+}
+
 function installUpdate() {
   if (updateReady && window.api.installUpdateNow) {
-    // Mark for What's New display on next launch
     localStorage.setItem('justUpdated', 'true');
     if (updateVersion) localStorage.setItem('installedVersion', updateVersion);
     window.api.installUpdateNow();
   }
-}
-
-function dismissUpdateBanner() {
-  document.getElementById('updateBanner').style.display = 'none';
 }
 
 // ========== Manual Tuning ==========

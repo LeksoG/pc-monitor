@@ -465,12 +465,8 @@ function setupAutoUpdater() {
   autoUpdater.on('update-downloaded', (info) => {
     sendUpdateStatus('ready', info.version);
     if (notificationSettings.updates) {
-      showNotification('Update Ready', `Version ${info.version} will install automatically`, 'update');
+      showNotification('Update Available', `Version ${info.version} is ready — check Updates in the app`, 'update');
     }
-    // Auto-install after a short delay (renderer will also trigger this via countdown)
-    setTimeout(() => {
-      autoUpdater.quitAndInstall(false, true);
-    }, 5000);
   });
 
   autoUpdater.on('error', (err) => {
