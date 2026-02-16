@@ -1143,6 +1143,18 @@ function show3DMotherboard() {
 let updateReady = false;
 let updateVersion = null;
 
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function formatSpeed(bytesPerSecond) {
+  if (bytesPerSecond < 1024) return bytesPerSecond + ' B/s';
+  if (bytesPerSecond < 1024 * 1024) return (bytesPerSecond / 1024).toFixed(1) + ' KB/s';
+  return (bytesPerSecond / (1024 * 1024)).toFixed(1) + ' MB/s';
+}
+
 function setupUpdateListener() {
   if (window.api.onUpdateStatus) {
     window.api.onUpdateStatus((data) => {
@@ -1166,22 +1178,30 @@ function setupUpdateListener() {
         progressText.textContent = 'Starting download...';
         updateVersion = data.version;
       } else if (data.status === 'downloading') {
+        const progress = data.progress || {};
+        const pct = progress.percent || 0;
         banner.style.display = 'block';
         title.textContent = 'Downloading Update';
-        const pct = data.progress || 0;
-        text.textContent = `Downloading v${updateVersion || 'new version'}...`;
         btn.style.display = 'none';
         progressContainer.style.display = 'block';
         progressBar.style.width = pct + '%';
         progressPercent.textContent = pct + '%';
-        if (pct < 30) {
-          progressText.textContent = 'Downloading core files...';
-        } else if (pct < 70) {
-          progressText.textContent = 'Downloading components...';
-        } else if (pct < 95) {
-          progressText.textContent = 'Almost done...';
+
+        // Show real download info: speed + transferred/total
+        if (progress.total && progress.transferred) {
+          text.textContent = `v${updateVersion || 'update'} — ${formatBytes(progress.transferred)} / ${formatBytes(progress.total)}`;
+          progressText.textContent = formatSpeed(progress.bytesPerSecond || 0);
         } else {
-          progressText.textContent = 'Finalizing download...';
+          text.textContent = `Downloading v${updateVersion || 'new version'}...`;
+          if (pct < 30) {
+            progressText.textContent = 'Downloading core files...';
+          } else if (pct < 70) {
+            progressText.textContent = 'Downloading components...';
+          } else if (pct < 95) {
+            progressText.textContent = 'Almost done...';
+          } else {
+            progressText.textContent = 'Finalizing download...';
+          }
         }
       } else if (data.status === 'ready') {
         banner.style.display = 'block';
