@@ -931,7 +931,7 @@ function checkForWhatsNew() {
   const justUpdated = localStorage.getItem('justUpdated');
   const installedVersion = localStorage.getItem('installedVersion');
   const lastSeenVersion = localStorage.getItem('lastSeenVersion');
-  const currentVersion = '3.5.0';
+  const currentVersion = '3.6.0';
 
   // Show What's New if: just updated flag is set, or first time seeing this version
   if (justUpdated === 'true' || (lastSeenVersion && lastSeenVersion !== currentVersion)) {
@@ -1198,7 +1198,7 @@ function showUpdateDot(visible) {
 
 function renderUpdatesPage() {
   const container = document.getElementById('updatesContent');
-  const currentVer = '3.5.0';
+  const currentVer = '3.6.0';
 
   if (updateVersion) {
     // There's an update available

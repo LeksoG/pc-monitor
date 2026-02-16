@@ -26,7 +26,7 @@ let gameModeActive = false;
 let creatorModeActive = false;
 let graphicsEnhancerEnabled = false;
 let gameDetectionInterval = null;
-const CURRENT_VERSION = '3.5.0';
+const CURRENT_VERSION = '3.6.0';
 let notificationSettings = {
   lowStorage: true,
   highCPU: true,
