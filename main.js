@@ -430,7 +430,8 @@ function startGameDetection() {
 function setupAutoUpdater() {
   if (!autoUpdater) return;
 
-  autoUpdater.autoDownload = true;
+  // IMPORTANT: autoDownload must be false for download-progress events to fire reliably
+  autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on('checking-for-update', () => {
@@ -442,6 +443,10 @@ function setupAutoUpdater() {
     if (notificationSettings.updates) {
       showNotification('Update Available', `Version ${info.version} is downloading. See the app for progress.`, 'update');
     }
+    // Manually trigger download so progress events fire
+    autoUpdater.downloadUpdate().catch((err) => {
+      sendUpdateStatus('error', null, null, err.message);
+    });
   });
 
   autoUpdater.on('update-not-available', () => {
