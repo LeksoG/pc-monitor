@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, Notification, dialog } = require('electron');
 const path = require('path');
 const os = require('os');
 const { exec } = require('child_process');
@@ -6,12 +6,21 @@ const fs = require('fs');
 const https = require('https');
 const dns = require('dns');
 
+// Auto-updater (electron-updater)
+let autoUpdater;
+try {
+  autoUpdater = require('electron-updater').autoUpdater;
+} catch (e) {
+  // electron-updater not available in dev mode, use manual check
+  autoUpdater = null;
+}
+
 let mainWindow;
 let previousCPUInfo = null;
 let runningApps = new Map();
 let currentOptimizationMode = 'auto';
 let lastDetectedMode = 'balanced';
-const CURRENT_VERSION = '3.2.0';
+const CURRENT_VERSION = '3.3.0';
 let notificationSettings = {
   lowStorage: true,
   highCPU: true,
@@ -33,7 +42,84 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
   startMonitoring();
+  setupAutoUpdater();
 }
+
+// Auto-updater setup
+function setupAutoUpdater() {
+  if (!autoUpdater) return;
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('checking-for-update', () => {
+    sendUpdateStatus('checking');
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    sendUpdateStatus('available', info.version);
+    if (notificationSettings.updates) {
+      showNotification('Update Available', `Version ${info.version} is downloading...`, 'update');
+    }
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    sendUpdateStatus('up-to-date');
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    sendUpdateStatus('downloading', null, Math.round(progress.percent));
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    sendUpdateStatus('ready', info.version);
+    if (notificationSettings.updates) {
+      showNotification('Update Ready', `Version ${info.version} will install on restart`, 'update');
+    }
+  });
+
+  autoUpdater.on('error', (err) => {
+    sendUpdateStatus('error', null, null, err.message);
+  });
+
+  // Check for updates after a short delay
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch(() => {});
+  }, 5000);
+
+  // Then check every 30 minutes
+  setInterval(() => {
+    autoUpdater.checkForUpdates().catch(() => {});
+  }, 30 * 60 * 1000);
+}
+
+function sendUpdateStatus(status, version, progress, error) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update-status', { status, version, progress, error });
+  }
+}
+
+// IPC: manually trigger update check
+ipcMain.handle('check-for-updates', async () => {
+  if (autoUpdater) {
+    try {
+      const result = await autoUpdater.checkForUpdates();
+      return { success: true, version: result?.updateInfo?.version };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }
+  // Fallback to manual GitHub check
+  const { version } = await fetchLatestVersion();
+  return { success: true, version: version || CURRENT_VERSION };
+});
+
+// IPC: install update now (restart)
+ipcMain.handle('install-update-now', () => {
+  if (autoUpdater) {
+    autoUpdater.quitAndInstall(false, true);
+  }
+});
 
 // Start monitoring
 function startMonitoring() {

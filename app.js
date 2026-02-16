@@ -1046,6 +1046,53 @@ function show3DMotherboard() {
   alert('3D Motherboard visualization coming soon!\n\nThis will show:\n• Interactive 3D model\n• Clickable components\n• Real-time component info');
 }
 
+// ========== Auto-Update UI ==========
+let updateReady = false;
+
+function setupUpdateListener() {
+  if (window.api.onUpdateStatus) {
+    window.api.onUpdateStatus((data) => {
+      const banner = document.getElementById('updateBanner');
+      const title = document.getElementById('updateBannerTitle');
+      const text = document.getElementById('updateBannerText');
+      const btn = document.getElementById('updateBannerBtn');
+
+      if (data.status === 'available') {
+        banner.style.display = 'flex';
+        title.textContent = 'Update Available';
+        text.textContent = `Version ${data.version} is downloading...`;
+        btn.style.display = 'none';
+      } else if (data.status === 'downloading') {
+        banner.style.display = 'flex';
+        title.textContent = 'Downloading Update';
+        text.textContent = `Progress: ${data.progress}%`;
+        btn.style.display = 'none';
+      } else if (data.status === 'ready') {
+        banner.style.display = 'flex';
+        title.textContent = 'Update Ready';
+        text.textContent = `Version ${data.version} is ready to install`;
+        btn.style.display = 'inline-block';
+        updateReady = true;
+      } else if (data.status === 'up-to-date') {
+        // Don't show anything if up to date
+      } else if (data.status === 'error') {
+        // Silently fail - don't bother user
+        console.log('Update check error:', data.error);
+      }
+    });
+  }
+}
+
+function installUpdate() {
+  if (updateReady && window.api.installUpdateNow) {
+    window.api.installUpdateNow();
+  }
+}
+
+function dismissUpdateBanner() {
+  document.getElementById('updateBanner').style.display = 'none';
+}
+
 // Initialize
 loadUsername();
 loadSystemInfo();
@@ -1057,6 +1104,7 @@ updateWifiSignal();
 updateFPSData();
 updateStats();
 updateNetworkGauges();
+setupUpdateListener();
 
 // Intervals
 setInterval(updateStats, 1000);
