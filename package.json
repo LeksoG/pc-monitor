@@ -1,6 +1,6 @@
 {
   "name": "iqon-pc-monitor",
-  "version": "3.5.0",
+  "version": "3.4.0",
   "description": "IQON - Professional PC Monitoring Application",
   "main": "main.js",
   "scripts": {
@@ -79,4 +79,5 @@
     }
   }
 }
+
 
